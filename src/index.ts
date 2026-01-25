@@ -7,6 +7,7 @@ import {
 import { GatewayIntentBits } from "discord.js";
 import { sapphireLogger } from "./utils/log.js";
 import env from "./utils/env.js";
+import { srcDir } from "./utils/workdir.js";
 
 // このBOTはGUILD_IDのサーバーのみで動作する (他鯖で動作させない)
 ApplicationCommandRegistries.setDefaultGuildIds([env.GUILD_ID]);
@@ -24,6 +25,7 @@ const client = new SapphireClient({
   shards: "auto",
   intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.Guilds],
   loadMessageCommandListeners: true,
+  baseUserDirectory: srcDir, // TypeScript直読み環境(tsxなど)ではdistではなくsrcディレクトリからコマンドを読み込む
 });
 
 // ログイン
