@@ -5,8 +5,8 @@ import {
   SapphireClient,
 } from "@sapphire/framework";
 import { GatewayIntentBits } from "discord.js";
-import { sapphireLogger } from "./utils/log.js";
 import env from "./utils/env.js";
+import { sapphireLogger } from "./utils/log.js";
 import { srcDir } from "./utils/workdir.js";
 
 // このBOTはGUILD_IDのサーバーのみで動作する (他鯖で動作させない)
