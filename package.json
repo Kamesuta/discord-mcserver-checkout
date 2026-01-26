@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node --require tsx src/index.ts",
-    "lint": "tsc --noEmit && eslint src --ext .ts",
-    "lint:fix": "tsc --noEmit && eslint src --ext .ts --fix",
-    "prettier": "prettier --write",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "format": "biome format --write src",
     "lint-staged": "lint-staged",
     "prepare": "if-env NODE_ENV=production && echo 'Skipping husky in production' || husky",
     "heroku-postbuild": "prisma generate && prisma migrate deploy"
@@ -19,16 +19,11 @@
     "node": "22.x"
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
+    "@biomejs/biome": "^2.3.12",
     "@types/node": "^22.14.1",
-    "eslint": "^9.24.0",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-jsdoc": "^50.6.9",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
-    "prettier": "^3.5.3",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.29.1"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.2.0",
