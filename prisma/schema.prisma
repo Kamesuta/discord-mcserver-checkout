@@ -9,3 +9,15 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+/// サーバーエイリアスとPterodactyl IDの対応付けを管理
+model ServerBinding {
+  /// エイリアス (例: server01, server02)
+  name      String   @id
+  /// Pterodactyl サーバーID (例: 354dc039)
+  pteroId   String
+  /// 作成日時
+  createdAt DateTime @default(now())
+  /// 更新日時
+  updatedAt DateTime @updatedAt
+}
