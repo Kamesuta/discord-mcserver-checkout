@@ -13,6 +13,12 @@ import { logger } from "../utils/log.js";
  * Pterodactylサーバーを管理するためのコマンドグループ
  */
 @RegisterChatInputCommand<Subcommand>((builder, command) => {
+  // サブコマンドグループ (hooksの前に設定する必要あり)
+  builder.addSubcommandGroup((group) =>
+    group.setName("user").setDescription("ユーザー管理"),
+  );
+
+  // コマンドの登録
   command.hooks.groups(command, builder);
   command.hooks.subcommands(command, builder);
   return builder
