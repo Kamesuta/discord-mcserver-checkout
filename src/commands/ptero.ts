@@ -276,3 +276,40 @@ export class PteroUserRemoveCommand extends Command {
     }
   }
 }
+
+/**
+ * /ptero user register コマンド
+ * Pterodactylにユーザーを登録
+ */
+@RegisterSubCommandGroup("ptero", "user", (builder) =>
+  builder
+    .setName("register")
+    .setDescription("Pterodactylにユーザーを登録")
+    .addStringOption((option) =>
+      option
+        .setName("nickname")
+        .setDescription("ニックネーム (半角英数)")
+        .setRequired(true),
+    ),
+)
+export class PteroUserRegisterCommand extends Command {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const nickname = interaction.options.getString("nickname", true);
+
+    await interaction.deferReply();
+
+    try {
+      await pterodactylService.registerUser(nickname);
+      await interaction.editReply(
+        `「${nickname}」のユーザー登録が完了しました。`,
+      );
+    } catch (error) {
+      logger.error(error);
+      const message =
+        error instanceof Error ? error.message : "不明なエラーが発生しました";
+      await interaction.editReply(`エラーが発生しました: ${message}`);
+    }
+  }
+}

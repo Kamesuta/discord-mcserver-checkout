@@ -53,6 +53,35 @@ interface PterodactylUser {
 }
 
 /**
+ * Pterodactyl API のユーザー一覧レスポンス型
+ */
+interface ListUsersResponse {
+  data: PterodactylUser[];
+}
+
+/**
+ * Pterodactyl API のユーザー作成レスポンス型
+ */
+interface CreateUserResponse {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    id: number;
+    external_id: string | null;
+    uuid: string;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    language: string;
+    root_admin: boolean;
+    "2fa": boolean;
+    created_at: string;
+    updated_at: string;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
  * Pterodactyl API との通信を管理するサービスクラス
  * シングルトンパターンで実装されており、getInstance() で取得する
  */
@@ -60,8 +89,11 @@ class PterodactylService {
   /** Pterodactyl API のベースURL */
   private readonly _baseUrl: string = env.PTERODACTYL_BASE_URL;
 
-  /** Pterodactyl API キー */
-  private readonly _apiKey: string = env.PTERODACTYL_API_KEY;
+  /** Pterodactyl Client API キー */
+  private readonly _apiKey: string = env.PTERODACTYL_CLIENT_API_KEY;
+
+  /** Pterodactyl Application API キー */
+  private readonly _appApiKey: string = env.PTERODACTYL_APP_API_KEY;
 
   /** カスタムヘッダー (Cloudflare Access など) */
   private readonly _customHeaders: Record<string, string> =
@@ -102,6 +134,53 @@ class PterodactylService {
         `Pterodactyl API エラー: ${response.status} ${response.statusText} - ${body}`,
       );
       throw new Error(`Pterodactyl API エラー: ${response.statusText}`);
+    }
+
+    // 204 No Content の場合は空オブジェクトを返す
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Pterodactyl Application API にリクエストを送信する内部メソッド
+   * @param endpoint API エンドポイント (/api/application からの相対パス)
+   * @param options fetch オプション
+   * @returns API レスポンス
+   */
+  private async _appRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    const url = `${this._baseUrl}/api/application${endpoint}`;
+    const headers = {
+      // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API headers
+      Authorization: `Bearer ${this._appApiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API headers
+      ...this._customHeaders,
+    };
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...headers,
+        ...options.headers,
+      },
+    });
+
+    // エラーレスポンスの処理
+    if (!response.ok) {
+      const body = await response.text();
+      logger.error(
+        `Pterodactyl Application API エラー: ${response.status} ${response.statusText} - ${body}`,
+      );
+      throw new Error(
+        `Pterodactyl Application API エラー: ${response.statusText}`,
+      );
     }
 
     // 204 No Content の場合は空オブジェクトを返す
@@ -221,11 +300,6 @@ class PterodactylService {
    */
   public async removeUser(serverId: string, email: string): Promise<void> {
     try {
-      // ユーザー一覧のレスポンス型
-      interface ListUsersResponse {
-        data: PterodactylUser[];
-      }
-
       // サーバー上のユーザー一覧を取得
       const users = await this._request<ListUsersResponse>(
         `/servers/${serverId}/users`,
@@ -249,6 +323,33 @@ class PterodactylService {
       );
     } catch (error) {
       logger.error(`ユーザー ${email} の削除中にエラーが発生しました:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Pterodactylにユーザーを登録
+   * @param nickname ニックネーム (半角英数)
+   */
+  public async registerUser(nickname: string): Promise<void> {
+    try {
+      // ニックネームから情報を生成
+      await this._appRequest<CreateUserResponse>("/users", {
+        method: "POST",
+        body: JSON.stringify({
+          // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+          email: `${nickname}@kpw.local`,
+          username: nickname,
+          first_name: nickname,
+          last_name: nickname,
+          // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+        }),
+      });
+    } catch (error) {
+      logger.error(
+        `ユーザー ${nickname} の登録中にエラーが発生しました:`,
+        error,
+      );
       throw error;
     }
   }
