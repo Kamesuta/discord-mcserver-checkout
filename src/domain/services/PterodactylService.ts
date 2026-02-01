@@ -60,6 +60,35 @@ interface ListUsersResponse {
 }
 
 /**
+ * Pterodactyl API のバックアップダウンロード (署名URL) レスポンス型
+ */
+interface DownloadBackupResponse {
+  object: string;
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    /** 署名付きダウンロード URL */
+    url: string;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
+ * Pterodactyl API のバックアップ作成レスポンス型
+ */
+interface CreateBackupResponse {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    /** バックアップのUUID */
+    uuid: string;
+    /** バックアップ名 */
+    name: string;
+    /** バックアップがロックされているかどうか */
+    is_locked: boolean;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
  * Pterodactyl API のユーザー作成レスポンス型
  */
 interface CreateUserResponse {
@@ -323,6 +352,69 @@ class PterodactylService {
       );
     } catch (error) {
       logger.error(`ユーザー ${email} の削除中にエラーが発生しました:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップを作成
+   * @param serverId サーバーID
+   * @param name バックアップ名
+   * @returns 作成されたバックアップの情報
+   */
+  public async createBackup(
+    serverId: string,
+    name: string,
+  ): Promise<CreateBackupResponse> {
+    try {
+      const data = await this._request<CreateBackupResponse>(
+        `/servers/${serverId}/backups`,
+        {
+          method: "POST",
+          body: JSON.stringify({ name }),
+        },
+      );
+      return data;
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ作成中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップをダウンロード
+   * バックアップのダウンロード URL を取得し、その内容を ArrayBuffer として返す
+   * @param serverId サーバーID
+   * @param backupUuid バックアップのUUID
+   * @returns ダウンロードされたバックアップのバイナリデータ
+   */
+  public async downloadBackup(
+    serverId: string,
+    backupUuid: string,
+  ): Promise<ArrayBuffer> {
+    try {
+      // 署名付きダウンロード URL を取得
+      const { attributes } = await this._request<DownloadBackupResponse>(
+        `/servers/${serverId}/backups/${backupUuid}/download`,
+      );
+
+      // 取得した署名 URL からバイナリデータをダウンロード
+      const fileResponse = await fetch(attributes.url);
+      if (!fileResponse.ok) {
+        throw new Error(
+          `バックアップダウンロード失敗: ${fileResponse.statusText}`,
+        );
+      }
+
+      return fileResponse.arrayBuffer();
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ (${backupUuid}) ダウンロード中にエラーが発生しました:`,
+        error,
+      );
       throw error;
     }
   }

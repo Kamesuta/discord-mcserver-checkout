@@ -1,3 +1,4 @@
+import { mkdir, writeFile } from "node:fs/promises";
 import {
   Command,
   RegisterSubCommand,
@@ -8,6 +9,7 @@ import { RegisterChatInputCommand } from "@sapphire/decorators";
 import { MessageFlags } from "discord.js";
 import { pterodactylService } from "@/domain/services/PterodactylService.js";
 import { logger } from "../utils/log.js";
+import { getWorkdirPath } from "../utils/workdir.js";
 
 /**
  * /ptero コマンド (親コマンド)
@@ -17,6 +19,9 @@ import { logger } from "../utils/log.js";
   // サブコマンドグループ (hooksの前に設定する必要あり)
   builder.addSubcommandGroup((group) =>
     group.setName("user").setDescription("ユーザー管理"),
+  );
+  builder.addSubcommandGroup((group) =>
+    group.setName("backup").setDescription("バックアップ管理"),
   );
 
   // コマンドの登録
@@ -343,6 +348,101 @@ export class PteroUserResetPasswordCommand extends Command {
       const newPassword = await pterodactylService.resetPassword(nickname);
       await interaction.editReply(
         `「${nickname}」のパスワードをリセットしました。\n新しいパスワード: \`${newPassword}\``,
+      );
+    } catch (error) {
+      logger.error(error);
+      const message =
+        error instanceof Error ? error.message : "不明なエラーが発生しました";
+      await interaction.editReply(`エラーが発生しました: ${message}`);
+    }
+  }
+}
+
+/**
+ * /ptero backup create コマンド
+ * サーバーのバックアップを作成
+ */
+@RegisterSubCommandGroup("ptero", "backup", (builder) =>
+  builder
+    .setName("create")
+    .setDescription("サーバーのバックアップを作成")
+    .addStringOption((option) =>
+      option.setName("server").setDescription("サーバーID").setRequired(true),
+    )
+    .addStringOption((option) =>
+      option.setName("name").setDescription("バックアップ名").setRequired(true),
+    ),
+)
+export class PteroBackupCreateCommand extends Command {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const serverId = interaction.options.getString("server", true);
+    const name = interaction.options.getString("name", true);
+
+    await interaction.deferReply();
+
+    try {
+      const backup = await pterodactylService.createBackup(serverId, name);
+      await interaction.editReply(
+        `サーバー \`${serverId}\` のバックアップ \`${backup.attributes.name}\` を作成しました。\n` +
+          `UUID: \`${backup.attributes.uuid}\``,
+      );
+    } catch (error) {
+      logger.error(error);
+      const message =
+        error instanceof Error ? error.message : "不明なエラーが発生しました";
+      await interaction.editReply(`エラーが発生しました: ${message}`);
+    }
+  }
+}
+
+/**
+ * /ptero backup download コマンド
+ * サーバーのバックアップをダウンロード
+ * ダウンロード先: run/backup/
+ */
+@RegisterSubCommandGroup("ptero", "backup", (builder) =>
+  builder
+    .setName("download")
+    .setDescription("サーバーのバックアップをダウンロード")
+    .addStringOption((option) =>
+      option.setName("server").setDescription("サーバーID").setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("name")
+        .setDescription("バックアップのUUID")
+        .setRequired(true),
+    ),
+)
+export class PteroBackupDownloadCommand extends Command {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const serverId = interaction.options.getString("server", true);
+    const backupUuid = interaction.options.getString("name", true);
+
+    await interaction.deferReply();
+
+    try {
+      const data = await pterodactylService.downloadBackup(
+        serverId,
+        backupUuid,
+      );
+
+      // ダウンロード先ディレクトリを作成
+      const backupDir = getWorkdirPath("backup");
+      await mkdir(backupDir, { recursive: true });
+
+      // ファイル名はサーバーID_バックアップUUID.tar.gz
+      const fileName = `${serverId}_${backupUuid}.tar.gz`;
+      const filePath = `${backupDir}/${fileName}`;
+      await writeFile(filePath, Buffer.from(data));
+
+      await interaction.editReply(
+        `サーバー \`${serverId}\` のバックアップをダウンロードしました。\n` +
+          `保存先: \`${filePath}\``,
       );
     } catch (error) {
       logger.error(error);
