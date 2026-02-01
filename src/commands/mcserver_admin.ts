@@ -5,7 +5,7 @@ import {
   Subcommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { RegisterChatInputCommand } from "@sapphire/decorators";
-import { pterodactylService } from "@/domain/services/PterodactylService.js";
+import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService.js";
 import type { ServerBinding } from "@/generated/prisma/browser.js";
 import { logger } from "../utils/log.js";

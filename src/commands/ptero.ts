@@ -7,7 +7,9 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { RegisterChatInputCommand } from "@sapphire/decorators";
 import { MessageFlags } from "discord.js";
-import { pterodactylService } from "@/domain/services/PterodactylService.js";
+import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService.js";
+import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService.js";
+import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService.js";
 import { logger } from "../utils/log.js";
 import { getWorkdirPath } from "../utils/workdir.js";
 
@@ -226,7 +228,7 @@ export class PteroUserAddCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await pterodactylService.addUser(serverId, email);
+      await pterodactylUserService.addUser(serverId, email);
       await interaction.editReply(
         `ユーザー \`${email}\` をサーバー \`${serverId}\` に追加しました。`,
       );
@@ -267,7 +269,7 @@ export class PteroUserRemoveCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await pterodactylService.removeUser(serverId, email);
+      await pterodactylUserService.removeUser(serverId, email);
       await interaction.editReply(
         `ユーザー \`${email}\` をサーバー \`${serverId}\` から削除しました。`,
       );
@@ -304,7 +306,7 @@ export class PteroUserRegisterCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await pterodactylService.registerUser(nickname);
+      await pterodactylUserService.registerUser(nickname);
       await interaction.editReply(
         `「${nickname}」のユーザー登録が完了しました。`,
       );
@@ -342,7 +344,7 @@ export class PteroUserResetPasswordCommand extends Command {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
-      const newPassword = await pterodactylService.resetPassword(nickname);
+      const newPassword = await pterodactylUserService.resetPassword(nickname);
       await interaction.editReply(
         `「${nickname}」のパスワードをリセットしました。\n新しいパスワード: \`${newPassword}\``,
       );
@@ -387,8 +389,8 @@ export class PteroBackupCommand extends Command {
     try {
       // バックアップ制限と現在の一覧を同時に取得
       const [limit, backups] = await Promise.all([
-        pterodactylService.getBackupLimit(serverId),
-        pterodactylService.listBackups(serverId),
+        pterodactylBackupService.getBackupLimit(serverId),
+        pterodactylBackupService.listBackups(serverId),
       ]);
 
       // 制限に達している場合は一番古いロック済みでないバックアップを削除
@@ -407,7 +409,10 @@ export class PteroBackupCommand extends Command {
           );
         }
 
-        await pterodactylService.deleteBackup(serverId, oldest.attributes.uuid);
+        await pterodactylBackupService.deleteBackup(
+          serverId,
+          oldest.attributes.uuid,
+        );
       }
 
       // バックアップ名は "[Bot] YYYY-MM-DD HH:mm:ss" 形式
@@ -418,7 +423,7 @@ export class PteroBackupCommand extends Command {
         `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
       // バックアップを作成
-      const created = await pterodactylService.createBackup(
+      const created = await pterodactylBackupService.createBackup(
         serverId,
         backupName,
       );
@@ -427,7 +432,10 @@ export class PteroBackupCommand extends Command {
       // バックアップの完了をポーリング
       const deadline = Date.now() + PteroBackupCommand._POLL_TIMEOUT;
       while (Date.now() < deadline) {
-        const backup = await pterodactylService.getBackup(serverId, backupUuid);
+        const backup = await pterodactylBackupService.getBackup(
+          serverId,
+          backupUuid,
+        );
         if (backup.attributes.is_successful) break;
         if (
           backup.attributes.completed_at &&
@@ -446,7 +454,7 @@ export class PteroBackupCommand extends Command {
       }
 
       // ダウンロード
-      const data = await pterodactylService.downloadBackup(
+      const data = await pterodactylBackupService.downloadBackup(
         serverId,
         backupUuid,
       );
@@ -459,7 +467,7 @@ export class PteroBackupCommand extends Command {
       await writeFile(filePath, Buffer.from(data));
 
       // 一時バックアップを削除
-      await pterodactylService.deleteBackup(serverId, backupUuid);
+      await pterodactylBackupService.deleteBackup(serverId, backupUuid);
       backupUuid = null;
 
       await interaction.editReply(
@@ -472,7 +480,7 @@ export class PteroBackupCommand extends Command {
       // エラー時に一時バックアップが残っていたら削除を試みる
       if (backupUuid) {
         try {
-          await pterodactylService.deleteBackup(serverId, backupUuid);
+          await pterodactylBackupService.deleteBackup(serverId, backupUuid);
         } catch {
           logger.error(
             `一時バックアップ (${backupUuid}) の削除に失敗しました。`,
