@@ -4,10 +4,10 @@
 
 | コマンド | 説明 |
 |---|---|
-| `/mcserver_admin server_binding list` | サーバーバインディング一覧表示 |
-| `/mcserver_admin server_binding set` | サーバーバインディング設定 |
-| `/mcserver_admin server_binding unset` | サーバーバインディング削除 |
-| `/mcserver_admin status` | サーバーステータス取得（エイリアス対応） |
+| `/mcserver-admin server-binding list` | サーバーバインディング一覧表示 |
+| `/mcserver-admin server-binding set` | サーバーバインディング設定 |
+| `/mcserver-admin server-binding unset` | サーバーバインディング削除 |
+| `/mcserver-admin status` | サーバーステータス取得（エイリアス対応） |
 | `/ptero status` | サーバーステータス取得（サーバーID直指定） |
 | `/ptero start` | サーバー起動 |
 | `/ptero stop` | サーバー停止 |
@@ -16,7 +16,7 @@
 | `/ptero user add` | サーバーにユーザー追加 |
 | `/ptero user remove` | サーバーからユーザー削除 |
 | `/ptero user register` | Pterodactylユーザー登録 |
-| `/ptero user reset_password` | ユーザーパスワードリセット |
+| `/ptero user reset-password` | ユーザーパスワードリセット |
 | `/ptero backup` | バックアップ作成・ダウンロード |
 
 ---
@@ -45,7 +45,7 @@
 
 ---
 
-### `/mcserver reset_password` — パスワードリセット
+### `/mcserver reset-password` — パスワードリセット
 
 | 項目 | 内容 |
 |---|---|
@@ -57,7 +57,7 @@
 
 ---
 
-### `/mcserver_admin workflow list` — 申請一覧表示
+### `/mcserver-admin workflow list` — 申請一覧表示
 
 | 項目 | 内容 |
 |---|---|
@@ -67,7 +67,7 @@
 
 ---
 
-### `/mcserver_admin workflow approve` — 申請承認
+### `/mcserver-admin workflow approve` — 申請承認
 
 | 項目 | 内容 |
 |---|---|
@@ -91,7 +91,7 @@
 
 ---
 
-### `/mcserver_admin checkout list` — 貸出一覧表示
+### `/mcserver-admin checkout list` — 貸出一覧表示
 
 | 項目 | 内容 |
 |---|---|
@@ -103,7 +103,7 @@
 
 ---
 
-### `/mcserver_admin checkout extend` — 期限変更
+### `/mcserver-admin checkout extend` — 期限変更
 
 | 項目 | 内容 |
 |---|---|
@@ -121,7 +121,7 @@
 
 ---
 
-### `/mcserver_admin checkout return` — 強制返却
+### `/mcserver-admin checkout return` — 強制返却
 
 | 項目 | 内容 |
 |---|---|

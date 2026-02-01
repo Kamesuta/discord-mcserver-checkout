@@ -25,7 +25,7 @@ export interface CheckoutModalDefaults {
 }
 
 /**
- * /mcserver checkout と /mcserver_admin workflow edit で共有される
+ * /mcserver checkout と /mcserver-admin workflow edit で共有される
  * モーダルハンドラーの基底クラス。
  *
  * フィールド抽出・バリデーションを共通化し、
@@ -36,7 +36,7 @@ export interface CheckoutModalDefaults {
 export abstract class BaseCheckoutModalHandler extends InteractionHandler {
   /**
    * サーバー貸出申請モーダルを生成する。
-   * /mcserver checkout と /mcserver_admin workflow edit で共有される。
+   * /mcserver checkout と /mcserver-admin workflow edit で共有される。
    * @param customId モーダルの customId
    * @param title モーダルのタイトル
    * @param defaults デフォルト値（省略時は空）
@@ -82,7 +82,7 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
     );
 
     const mcVersionInput = new TextInputBuilder()
-      .setCustomId("mc_version")
+      .setCustomId("mc-version")
       .setStyle(TextInputStyle.Short)
       .setPlaceholder("例: 1.20.1")
       .setRequired(false);
@@ -98,7 +98,7 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
     );
 
     const panelUsersMenu = new UserSelectMenuBuilder()
-      .setCustomId("panel_users")
+      .setCustomId("panel-users")
       .setMinValues(1)
       .setMaxValues(10)
       .setRequired(true);
@@ -141,10 +141,10 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
   ): Promise<BaseWorkflowParams | null> {
     const name = interaction.fields.getTextInputValue("name");
     const description = interaction.fields.getTextInputValue("description");
-    const mcVersion = interaction.fields.getTextInputValue("mc_version");
+    const mcVersion = interaction.fields.getTextInputValue("mc-version");
     const periodStr = interaction.fields.getTextInputValue("period");
 
-    const panelUsersField = interaction.fields.fields.get("panel_users");
+    const panelUsersField = interaction.fields.fields.get("panel-users");
     const panelUsers =
       panelUsersField && "values" in panelUsersField
         ? (panelUsersField.values as string[])

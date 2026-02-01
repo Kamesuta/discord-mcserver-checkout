@@ -32,17 +32,17 @@
   - `updateStatus(id, status, ...)` — ステータス・割り当て情報の更新
 - [x] `/mcserver` コマンド実装 (`src/commands/mcserver.ts`)
   - `/mcserver checkout` — モーダルフォーム表示（5項目の入力）→ DB記録 → 申請受付通知
-  - `/mcserver reset_password` — 実行者の Discord ID から `PterodactylUser` を検索し、パスワードリセット
-- [ ] `/mcserver_admin workflow edit` コマンド実装
+  - `/mcserver reset-password` — 実行者の Discord ID から `PterodactylUser` を検索し、パスワードリセット
+- [ ] `/mcserver-admin workflow edit` コマンド実装
   - PENDING の申請を編集。/mcserver checkout と同じ引数と同じ形式のモーダルを表示。なるべくクラスを再利用するように。
 
 ---
 
 ## Phase 3: 承認・割り当てフロー
 
-- [ ] `/mcserver_admin workflow list` コマンド実装
+- [ ] `/mcserver-admin workflow list` コマンド実装
   - PENDING の申請一覧を Embed で表示
-- [ ] `/mcserver_admin workflow approve` コマンド実装（インタラクティブフロー）
+- [ ] `/mcserver-admin workflow approve` コマンド実装（インタラクティブフロー）
   1. 申請内容を表示
   2. パネル権限付与対象ユーザーの Pterodactyl 登録確認
   3. 未登録がある場合 → モーダルでユーザー名入力 → `registerUser` + DB保存
@@ -56,9 +56,9 @@
 
 ## Phase 4: 貸出管理
 
-- [ ] `/mcserver_admin checkout list` コマンド実装
+- [ ] `/mcserver-admin checkout list` コマンド実装
   - ACTIVE の貸出一覧を Embed で表示（サーバーID、主催者、期限、残り日数等）
-- [ ] `/mcserver_admin checkout extend` コマンド実装
+- [ ] `/mcserver-admin checkout extend` コマンド実装
   - `id` と日付を受け取り、ステータスに応じた動作：
     - PENDING: `periodDays` を上書き（承認前に期間を調整する場合に使用）
     - ACTIVE: `endDate` を指定日付に設定
@@ -77,7 +77,7 @@
   - パネル権限付与対象ユーザーの権限剥奪（`WorkflowPanelUser` に記録されたユーザーを対象）
   - ステータスを `RETURNED` に更新
   - 主催者・パネル権限付与対象ユーザーへ返却通知
-- [ ] `/mcserver_admin checkout return` コマンド実装（インタラクティブフロー）
+- [ ] `/mcserver-admin checkout return` コマンド実装（インタラクティブフロー）
   1. 申請情報・バックアップ一覧を表示
   2. Select Menu でバックアップを選択
   3. モーダルで日付・補足コメントを入力

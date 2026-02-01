@@ -157,25 +157,25 @@ class PterodactylUserService extends PterodactylBaseService {
 
   /**
    * Pterodactylにユーザーを登録
-   * @param nickname ニックネーム (半角英数)
+   * @param username ニックネーム (半角英数)
    */
-  public async registerUser(nickname: string): Promise<void> {
+  public async registerUser(username: string): Promise<void> {
     try {
       // ニックネームから情報を生成
       await this._requestAppApi<CreateUserResponse>("/users", {
         method: "POST",
         body: JSON.stringify({
           // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-          email: `${nickname}@kpw.local`,
-          username: nickname,
-          first_name: nickname,
-          last_name: nickname,
+          email: `${username}@kpw.local`,
+          username: username,
+          first_name: username,
+          last_name: username,
           // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
         }),
       });
     } catch (error) {
       logger.error(
-        `ユーザー ${nickname} の登録中にエラーが発生しました:`,
+        `ユーザー ${username} の登録中にエラーが発生しました:`,
         error,
       );
       throw error;
@@ -184,10 +184,10 @@ class PterodactylUserService extends PterodactylBaseService {
 
   /**
    * ユーザーのパスワードをリセット
-   * @param nickname ニックネーム
+   * @param username ニックネーム
    * @returns 新しいパスワード
    */
-  public async resetPassword(nickname: string): Promise<string> {
+  public async resetPassword(username: string): Promise<string> {
     try {
       // ユーザーを検索
       // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
@@ -201,15 +201,15 @@ class PterodactylUserService extends PterodactylBaseService {
             last_name: string;
           };
         }[];
-      }>(`/users?filter[username]=${nickname}`);
+      }>(`/users?filter[username]=${username}`);
       // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
 
       const user = users.data.find(
-        (u) => u.attributes.username.toLowerCase() === nickname.toLowerCase(),
+        (u) => u.attributes.username.toLowerCase() === username.toLowerCase(),
       );
 
       if (!user) {
-        throw new Error(`ユーザー \`${nickname}\` が見つかりませんでした。`);
+        throw new Error(`ユーザー \`${username}\` が見つかりませんでした。`);
       }
 
       // ランダムなパスワードを生成 (12文字)
@@ -232,7 +232,7 @@ class PterodactylUserService extends PterodactylBaseService {
       return newPassword;
     } catch (error) {
       logger.error(
-        `ユーザー ${nickname} のパスワードリセット中にエラーが発生しました:`,
+        `ユーザー ${username} のパスワードリセット中にエラーが発生しました:`,
         error,
       );
       throw error;

@@ -14,11 +14,11 @@ import { BaseCheckoutModalHandler } from "./WorkflowBaseModal.js";
 })
 export class WorkflowCreateModal extends BaseCheckoutModalHandler {
   public override parse(interaction: ModalSubmitInteraction) {
-    if (!interaction.customId.startsWith("checkout_modal")) return this.none();
+    if (!interaction.customId.startsWith("checkout-modal")) return this.none();
     return this.some();
   }
 
-  // customId: checkout_modal?organizerId=...
+  // customId: checkout-modal?organizerId=...
   protected override async execute(
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
