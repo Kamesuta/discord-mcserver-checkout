@@ -20,9 +20,6 @@ import { getWorkdirPath } from "../utils/workdir.js";
   builder.addSubcommandGroup((group) =>
     group.setName("user").setDescription("ユーザー管理"),
   );
-  builder.addSubcommandGroup((group) =>
-    group.setName("backup").setDescription("バックアップ管理"),
-  );
 
   // コマンドの登録
   command.hooks.groups(command, builder);
@@ -359,86 +356,111 @@ export class PteroUserResetPasswordCommand extends Command {
 }
 
 /**
- * /ptero backup create コマンド
- * サーバーのバックアップを作成
+ * /ptero backup コマンド
+ * サーバーのバックアップを一時的に作成してダウンロード
+ * 名前は "[Bot] YYYY-MM-DD HH:mm:ss" で識別可能にする
+ * ダウンロード後に一時バックアップは自動削除される
  */
-@RegisterSubCommandGroup("ptero", "backup", (builder) =>
+@RegisterSubCommand("ptero", (builder) =>
   builder
-    .setName("create")
-    .setDescription("サーバーのバックアップを作成")
+    .setName("backup")
+    .setDescription("サーバーのバックアップを作成してダウンロード")
     .addStringOption((option) =>
       option.setName("server").setDescription("サーバーID").setRequired(true),
-    )
-    .addStringOption((option) =>
-      option.setName("name").setDescription("バックアップ名").setRequired(true),
     ),
 )
-export class PteroBackupCreateCommand extends Command {
+export class PteroBackupCommand extends Command {
+  /** バックアップの完了をポーリングする間隔 (ms) */
+  private static readonly _POLL_INTERVAL = 3000;
+  /** バックアップの完了待機のタイムアウト (ms) */
+  private static readonly _POLL_TIMEOUT = 300000;
+
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const serverId = interaction.options.getString("server", true);
-    const name = interaction.options.getString("name", true);
 
     await interaction.deferReply();
 
+    let backupUuid: string | null = null;
+
     try {
-      const backup = await pterodactylService.createBackup(serverId, name);
-      await interaction.editReply(
-        `サーバー \`${serverId}\` のバックアップ \`${backup.attributes.name}\` を作成しました。\n` +
-          `UUID: \`${backup.attributes.uuid}\``,
+      // バックアップ制限と現在の一覧を同時に取得
+      const [limit, backups] = await Promise.all([
+        pterodactylService.getBackupLimit(serverId),
+        pterodactylService.listBackups(serverId),
+      ]);
+
+      // 制限に達している場合は一番古いロック済みでないバックアップを削除
+      if (backups.length >= limit) {
+        const oldest = backups
+          .filter((b) => !b.attributes.is_locked)
+          .sort(
+            (a, b) =>
+              new Date(a.attributes.created_at).getTime() -
+              new Date(b.attributes.created_at).getTime(),
+          )[0];
+
+        if (!oldest) {
+          throw new Error(
+            "バックアップ制限に達しており、削除可能なバックアップがありません。",
+          );
+        }
+
+        await pterodactylService.deleteBackup(serverId, oldest.attributes.uuid);
+      }
+
+      // バックアップ名は "[Bot] YYYY-MM-DD HH:mm:ss" 形式
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const backupName =
+        `[Bot] ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+      // バックアップを作成
+      const created = await pterodactylService.createBackup(
+        serverId,
+        backupName,
       );
-    } catch (error) {
-      logger.error(error);
-      const message =
-        error instanceof Error ? error.message : "不明なエラーが発生しました";
-      await interaction.editReply(`エラーが発生しました: ${message}`);
-    }
-  }
-}
+      backupUuid = created.attributes.uuid;
 
-/**
- * /ptero backup download コマンド
- * サーバーのバックアップをダウンロード
- * ダウンロード先: run/backup/
- */
-@RegisterSubCommandGroup("ptero", "backup", (builder) =>
-  builder
-    .setName("download")
-    .setDescription("サーバーのバックアップをダウンロード")
-    .addStringOption((option) =>
-      option.setName("server").setDescription("サーバーID").setRequired(true),
-    )
-    .addStringOption((option) =>
-      option
-        .setName("name")
-        .setDescription("バックアップのUUID")
-        .setRequired(true),
-    ),
-)
-export class PteroBackupDownloadCommand extends Command {
-  public override async chatInputRun(
-    interaction: Command.ChatInputCommandInteraction,
-  ) {
-    const serverId = interaction.options.getString("server", true);
-    const backupUuid = interaction.options.getString("name", true);
+      // バックアップの完了をポーリング
+      const deadline = Date.now() + PteroBackupCommand._POLL_TIMEOUT;
+      while (Date.now() < deadline) {
+        const backup = await pterodactylService.getBackup(serverId, backupUuid);
+        if (backup.attributes.is_successful) break;
+        if (
+          backup.attributes.completed_at &&
+          !backup.attributes.is_successful
+        ) {
+          throw new Error("バックアップが失敗しました。");
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, PteroBackupCommand._POLL_INTERVAL),
+        );
+      }
 
-    await interaction.deferReply();
+      // タイムアウト確認
+      if (Date.now() >= deadline) {
+        throw new Error("バックアップの完了がタイムアウトしました。");
+      }
 
-    try {
+      // ダウンロード
       const data = await pterodactylService.downloadBackup(
         serverId,
         backupUuid,
       );
 
-      // ダウンロード先ディレクトリを作成
+      // run/backup/ に保存
       const backupDir = getWorkdirPath("backup");
       await mkdir(backupDir, { recursive: true });
-
-      // ファイル名はサーバーID_バックアップUUID.tar.gz
       const fileName = `${serverId}_${backupUuid}.tar.gz`;
       const filePath = `${backupDir}/${fileName}`;
       await writeFile(filePath, Buffer.from(data));
+
+      // 一時バックアップを削除
+      await pterodactylService.deleteBackup(serverId, backupUuid);
+      backupUuid = null;
 
       await interaction.editReply(
         `サーバー \`${serverId}\` のバックアップをダウンロードしました。\n` +
@@ -446,6 +468,18 @@ export class PteroBackupDownloadCommand extends Command {
       );
     } catch (error) {
       logger.error(error);
+
+      // エラー時に一時バックアップが残っていたら削除を試みる
+      if (backupUuid) {
+        try {
+          await pterodactylService.deleteBackup(serverId, backupUuid);
+        } catch {
+          logger.error(
+            `一時バックアップ (${backupUuid}) の削除に失敗しました。`,
+          );
+        }
+      }
+
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);

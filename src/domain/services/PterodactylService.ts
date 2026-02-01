@@ -89,6 +89,50 @@ interface CreateBackupResponse {
 }
 
 /**
+ * Pterodactyl API のバックアップ詳細レスポンス型
+ */
+interface PterodactylBackup {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    /** バックアップのUUID */
+    uuid: string;
+    /** バックアップ名 */
+    name: string;
+    /** バックアップがロックされているかどうか */
+    is_locked: boolean;
+    /** バックアップサイズ (バイト) */
+    size: number;
+    /** 作成日時 */
+    created_at: string;
+    /** 完了日時 */
+    completed_at: string | null;
+    /** バックアップが正常に完了したかどうか */
+    is_successful: boolean;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
+ * Pterodactyl API のバックアップ一覧レスポンス型
+ */
+interface ListBackupsResponse {
+  data: PterodactylBackup[];
+}
+
+/**
+ * Pterodactyl API のサーバー詳細レスポンス型 (バックアップ制限取得用)
+ */
+interface ServerFeatureLimits {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    feature_limits: {
+      backups: number;
+    };
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
  * Pterodactyl API のユーザー作成レスポンス型
  */
 interface CreateUserResponse {
@@ -352,6 +396,92 @@ class PterodactylService {
       );
     } catch (error) {
       logger.error(`ユーザー ${email} の削除中にエラーが発生しました:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップ制限を取得
+   * @param serverId サーバーID
+   * @returns バックアップの最大数
+   */
+  public async getBackupLimit(serverId: string): Promise<number> {
+    try {
+      const data = await this._request<ServerFeatureLimits>(
+        `/servers/${serverId}`,
+      );
+      return data.attributes.feature_limits.backups;
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ制限取得中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップ一覧を取得
+   * @param serverId サーバーID
+   * @returns バックアップの一覧
+   */
+  public async listBackups(serverId: string): Promise<PterodactylBackup[]> {
+    try {
+      const data = await this._request<ListBackupsResponse>(
+        `/servers/${serverId}/backups`,
+      );
+      return data.data;
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ一覧取得中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップ詳細を取得
+   * @param serverId サーバーID
+   * @param backupUuid バックアップのUUID
+   * @returns バックアップの詳細情報
+   */
+  public async getBackup(
+    serverId: string,
+    backupUuid: string,
+  ): Promise<PterodactylBackup> {
+    try {
+      const data = await this._request<PterodactylBackup>(
+        `/servers/${serverId}/backups/${backupUuid}`,
+      );
+      return data;
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ (${backupUuid}) 詳細取得中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのバックアップを削除
+   * @param serverId サーバーID
+   * @param backupUuid バックアップのUUID
+   */
+  public async deleteBackup(
+    serverId: string,
+    backupUuid: string,
+  ): Promise<void> {
+    try {
+      await this._request(`/servers/${serverId}/backups/${backupUuid}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ (${backupUuid}) 削除中にエラーが発生しました:`,
+        error,
+      );
       throw error;
     }
   }
