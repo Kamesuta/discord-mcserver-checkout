@@ -1,5 +1,8 @@
 import { logger } from "../../../utils/log.js";
-import { PterodactylBaseService } from "./PterodactylBaseService.js";
+import {
+  type PendingOperation,
+  PterodactylBaseService,
+} from "./PterodactylBaseService.js";
 
 /**
  * Pterodactyl API のバックアップダウンロード (署名URL) レスポンス型
@@ -78,6 +81,10 @@ interface ServerFeatureLimits {
  * Pterodactyl のバックアップ操作を管理するサービスクラス
  */
 class PterodactylBackupService extends PterodactylBaseService {
+  /** バックアップ完了のポーリング間隔 (ms) */
+  private static readonly _BACKUP_POLL_INTERVAL = 3000;
+  /** バックアップ完了のタイムアウト (ms) */
+  private static readonly _BACKUP_POLL_TIMEOUT = 300000;
   /**
    * サーバーのバックアップ制限を取得
    * @param serverId サーバーID
@@ -168,24 +175,24 @@ class PterodactylBackupService extends PterodactylBaseService {
   }
 
   /**
-   * サーバーのバックアップを作成
+   * サーバーのバックアップを作成し、完了待機用の PendingOperation を返す
    * @param serverId サーバーID
    * @param name バックアップ名
-   * @returns 作成されたバックアップの情報
+   * @returns attributes.uuid は即座に利用可能。completion を await すると完了まで待機する
    */
   public async createBackup(
     serverId: string,
     name: string,
-  ): Promise<CreateBackupResponse> {
+  ): Promise<PendingOperation<CreateBackupResponse, void>> {
+    let data: CreateBackupResponse;
     try {
-      const data = await this._requestClientApi<CreateBackupResponse>(
+      data = await this._requestClientApi<CreateBackupResponse>(
         `/servers/${serverId}/backups`,
         {
           method: "POST",
           body: JSON.stringify({ name }),
         },
       );
-      return data;
     } catch (error) {
       logger.error(
         `サーバー ${serverId} のバックアップ作成中にエラーが発生しました:`,
@@ -193,6 +200,28 @@ class PterodactylBackupService extends PterodactylBaseService {
       );
       throw error;
     }
+
+    let completion: Promise<void> | undefined;
+    return {
+      response: data,
+      wait: () => {
+        if (completion) return completion;
+
+        completion = this._pollUntil(
+          () => this.getBackup(serverId, data.attributes.uuid),
+          (backup) => backup.attributes.completed_at !== null,
+          PterodactylBackupService._BACKUP_POLL_INTERVAL,
+          PterodactylBackupService._BACKUP_POLL_TIMEOUT,
+          `サーバー ${serverId} のバックアップ (${data.attributes.uuid}) がタイムアウトしました`,
+        ).then((backup) => {
+          if (!backup.attributes.is_successful) {
+            throw new Error("バックアップが失敗しました。");
+          }
+        });
+
+        return completion;
+      },
+    };
   }
 
   /**

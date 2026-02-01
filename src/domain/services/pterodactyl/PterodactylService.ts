@@ -1,5 +1,8 @@
 import { logger } from "../../../utils/log.js";
-import { PterodactylBaseService } from "./PterodactylBaseService.js";
+import {
+  type PendingOperation,
+  PterodactylBaseService,
+} from "./PterodactylBaseService.js";
 
 /**
  * Pterodactyl API のサーバーリソース情報のレスポンス型
@@ -32,6 +35,11 @@ interface PterodactylServerResources {
  * Pterodactyl のサーバー操作を管理するサービスクラス
  */
 class PterodactylService extends PterodactylBaseService {
+  /** 電源操作のポーリング間隔 (ms) */
+  private static readonly _POWER_POLL_INTERVAL = 2000;
+  /** 電源操作のタイムアウト (ms) */
+  private static readonly _POWER_POLL_TIMEOUT = 60000;
+
   /**
    * サーバーのステータスを取得
    * @param serverId サーバーID
@@ -50,14 +58,15 @@ class PterodactylService extends PterodactylBaseService {
   }
 
   /**
-   * サーバーの電源状態を変更
+   * サーバーの電源状態を変更し、完了待機用の PendingOperation を返す
    * @param serverId サーバーID
    * @param signal 電源操作シグナル (start/stop/restart/kill)
+   * @returns completion を await すると操作完了まで待機する。await しなくても unhandled rejection にならない
    */
   public async setPowerState(
     serverId: string,
     signal: "start" | "stop" | "restart" | "kill",
-  ): Promise<void> {
+  ): Promise<PendingOperation<void, void>> {
     try {
       await this._requestClientApi(`/servers/${serverId}/power`, {
         method: "POST",
@@ -70,6 +79,33 @@ class PterodactylService extends PterodactylBaseService {
       );
       throw error;
     }
+
+    let completion: Promise<void> | undefined;
+
+    return {
+      response: undefined,
+      wait: () => {
+        if (completion) return completion;
+
+        // restart: 完了後の状態が観測しづらいため、即時完了とする
+        if (signal === "restart") {
+          completion = Promise.resolve();
+          return completion;
+        }
+
+        // start→running, stop/kill→offline になるまで待機
+        const expectedState = signal === "start" ? "running" : "offline";
+        completion = this._pollUntil(
+          () => this.getServerStatus(serverId),
+          (state) => state === expectedState,
+          PterodactylService._POWER_POLL_INTERVAL,
+          PterodactylService._POWER_POLL_TIMEOUT,
+          `サーバー ${serverId} の電源操作（${signal}）がタイムアウトしました`,
+        ).then(() => {});
+
+        return completion;
+      },
+    };
   }
 }
 

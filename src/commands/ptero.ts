@@ -372,11 +372,6 @@ export class PteroUserResetPasswordCommand extends Command {
     ),
 )
 export class PteroBackupCommand extends Command {
-  /** バックアップの完了をポーリングする間隔 (ms) */
-  private static readonly _POLL_INTERVAL = 3000;
-  /** バックアップの完了待機のタイムアウト (ms) */
-  private static readonly _POLL_TIMEOUT = 300000;
-
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
@@ -422,36 +417,13 @@ export class PteroBackupCommand extends Command {
         `[Bot] ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
         `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      // バックアップを作成
+      // バックアップを作成して完了を待機
       const created = await pterodactylBackupService.createBackup(
         serverId,
         backupName,
       );
-      backupUuid = created.attributes.uuid;
-
-      // バックアップの完了をポーリング
-      const deadline = Date.now() + PteroBackupCommand._POLL_TIMEOUT;
-      while (Date.now() < deadline) {
-        const backup = await pterodactylBackupService.getBackup(
-          serverId,
-          backupUuid,
-        );
-        if (backup.attributes.is_successful) break;
-        if (
-          backup.attributes.completed_at &&
-          !backup.attributes.is_successful
-        ) {
-          throw new Error("バックアップが失敗しました。");
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, PteroBackupCommand._POLL_INTERVAL),
-        );
-      }
-
-      // タイムアウト確認
-      if (Date.now() >= deadline) {
-        throw new Error("バックアップの完了がタイムアウトしました。");
-      }
+      backupUuid = created.response.attributes.uuid;
+      await created.wait();
 
       // ダウンロード
       const data = await pterodactylBackupService.downloadBackup(
