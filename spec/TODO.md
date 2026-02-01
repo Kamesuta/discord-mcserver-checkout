@@ -25,12 +25,12 @@
 
 ## Phase 2: 申請フロー
 
-- [ ] `WorkflowService` を作成 (`src/domain/services/WorkflowService.ts`)
+- [x] `WorkflowService` を作成 (`src/domain/services/WorkflowService.ts`)
   - `create(...)` — 申請の挿入
   - `findById(id)` — ID検索
   - `findByStatus(status)` — ステータス検索
   - `updateStatus(id, status, ...)` — ステータス・割り当て情報の更新
-- [ ] `/mcserver` コマンド実装 (`src/commands/mcserver.ts`)
+- [x] `/mcserver` コマンド実装 (`src/commands/mcserver.ts`)
   - `/mcserver checkout` — モーダルフォーム表示（5項目の入力）→ DB記録 → 申請受付通知
   - `/mcserver reset_password` — 実行者の Discord ID から `PterodactylUser` を検索し、パスワードリセット
 

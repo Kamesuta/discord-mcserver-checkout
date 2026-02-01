@@ -28,14 +28,16 @@ model Workflow {
   id                 Int            @id @default(autoincrement())
   /// 申請ステータス
   status             WorkflowStatus @default(PENDING)
-  /// サーバーの説明/用途（企画名）
-  description        String
+  /// サーバーの用途/企画名
+  name               String
+  /// 補足説明
+  description        String?
   /// 申請者の Discord ユーザーID
   applicantDiscordId String
   /// 主催者の Discord ユーザーID
   organizerDiscordId String
   /// 希望 Minecraft バージョン
-  mcVersion          String
+  mcVersion          String?
   /// 貸出希望期間（日数）
   periodDays         Int
   /// Pterodactyl サーバーID（割り当て後に埋まる）
