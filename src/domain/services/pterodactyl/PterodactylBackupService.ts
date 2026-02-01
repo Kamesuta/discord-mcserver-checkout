@@ -259,6 +259,28 @@ class PterodactylBackupService extends PterodactylBaseService {
       throw error;
     }
   }
+
+  /**
+   * サーバーのバックアップのロック状態を切り替える
+   * @param serverId サーバーID
+   * @param backupUuid バックアップのUUID
+   */
+  public async toggleLock(serverId: string, backupUuid: string): Promise<void> {
+    try {
+      await this._requestClientApi(
+        `/servers/${serverId}/backups/${backupUuid}/toggle-lock`,
+        {
+          method: "POST",
+        },
+      );
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のバックアップ (${backupUuid}) ロック切り替え中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
 
 /** PterodactylBackupService のシングルトンインスタンス */
