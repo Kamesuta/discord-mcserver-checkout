@@ -1,4 +1,5 @@
 import {
+  type ServerBinding,
   type Workflow,
   type WorkflowPanelUser,
   WorkflowStatus,
@@ -100,7 +101,9 @@ export class WorkflowService {
    * @param status ステータス
    * @returns 申請情報のリスト
    */
-  public async findByStatus(status: WorkflowStatus): Promise<Workflow[]> {
+  public async findByStatus(
+    status: WorkflowStatus,
+  ): Promise<WorkflowWithUsers[]> {
     return await prisma.workflow.findMany({
       where: { status },
       include: {
@@ -176,6 +179,51 @@ export class WorkflowService {
           panelUsers: true,
         },
       });
+    });
+  }
+
+  /**
+   * 利用可能なサーバー（未割り当てのサーバーバインディング）を検索する
+   * @returns 利用可能なサーバーバインディング、なければnull
+   */
+  public async findAvailableServer(): Promise<ServerBinding | null> {
+    const activeWorkflows = await prisma.workflow.findMany({
+      where: { status: WorkflowStatus.ACTIVE },
+      select: { pteroServerId: true },
+    });
+    const activeServerIds = activeWorkflows
+      .map((w) => w.pteroServerId)
+      .filter((id): id is string => id !== null);
+
+    return await prisma.serverBinding.findFirst({
+      where: { pteroId: { notIn: activeServerIds } },
+    });
+  }
+
+  /**
+   * PENDING 申請の貸出期間を更新する
+   * @param id 申請ID
+   * @param periodDays 新しい貸出期間（日数）
+   */
+  public async updatePeriodDays(
+    id: number,
+    periodDays: number,
+  ): Promise<Workflow> {
+    return await prisma.workflow.update({
+      where: { id },
+      data: { periodDays },
+    });
+  }
+
+  /**
+   * ACTIVE 申請の終了日を更新する
+   * @param id 申請ID
+   * @param endDate 新しい終了日
+   */
+  public async updateEndDate(id: number, endDate: Date): Promise<Workflow> {
+    return await prisma.workflow.update({
+      where: { id },
+      data: { endDate },
     });
   }
 }

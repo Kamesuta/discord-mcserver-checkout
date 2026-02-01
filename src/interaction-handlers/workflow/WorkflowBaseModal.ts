@@ -30,8 +30,6 @@ export interface CheckoutModalDefaults {
  *
  * フィールド抽出・バリデーションを共通化し、
  * サブクラスで execute に実行ロジックを実装する。
- *
- * src/utils/ に配置（interaction-handlers/ だと Sapphire が自動インスタンス化を試みる）。
  */
 export abstract class BaseCheckoutModalHandler extends InteractionHandler {
   /**
