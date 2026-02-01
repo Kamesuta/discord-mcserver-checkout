@@ -1,18 +1,21 @@
-import { type Workflow, WorkflowStatus } from "@/generated/prisma/client";
+import {
+  type Workflow,
+  type WorkflowPanelUser,
+  WorkflowStatus,
+} from "@/generated/prisma/client";
 import { prisma } from "@/utils/prisma";
 
-/**
- * 申請作成パラメータ
- */
-export interface CreateWorkflowParams {
+/** panelUsers を含む Workflow 型 */
+export type WorkflowWithUsers = Workflow & {
+  panelUsers: WorkflowPanelUser[];
+};
+
+/** モーダル入力で収集される申請コンテンツフィールド */
+export interface BaseWorkflowParams {
   /** サーバーの用途/企画名 */
   name: string;
   /** 補足説明 */
   description?: string;
-  /** 申請者の Discord ユーザーID */
-  applicantDiscordId: string;
-  /** 主催者の Discord ユーザーID */
-  organizerDiscordId: string;
   /** 希望 Minecraft バージョン */
   mcVersion?: string;
   /** 貸出希望期間（日数） */
@@ -21,9 +24,15 @@ export interface CreateWorkflowParams {
   panelUsers: string[];
 }
 
-/**
- * 申請ステータス更新パラメータ
- */
+/** 申請作成パラメータ */
+export interface CreateWorkflowParams extends BaseWorkflowParams {
+  /** 申請者の Discord ユーザーID */
+  applicantDiscordId: string;
+  /** 主催者の Discord ユーザーID */
+  organizerDiscordId: string;
+}
+
+/** 申請ステータス更新パラメータ */
 export interface UpdateWorkflowStatusParams {
   /** 申請ID */
   id: number;
@@ -35,6 +44,12 @@ export interface UpdateWorkflowStatusParams {
   startDate?: Date;
   /** 貸出終了日 */
   endDate?: Date;
+}
+
+/** 申請内容更新パラメータ */
+export interface UpdateWorkflowParams extends BaseWorkflowParams {
+  /** 申請ID */
+  id: number;
 }
 
 /**
@@ -71,7 +86,7 @@ export class WorkflowService {
    * @param id 申請ID
    * @returns 申請情報
    */
-  public async findById(id: number): Promise<Workflow | null> {
+  public async findById(id: number): Promise<WorkflowWithUsers | null> {
     return await prisma.workflow.findUnique({
       where: { id },
       include: {
@@ -130,6 +145,37 @@ export class WorkflowService {
       include: {
         panelUsers: true,
       },
+    });
+  }
+
+  /**
+   * 申請の内容を更新する（PENDING 申請の編集用）
+   * @param params 更新パラメータ
+   * @returns 更新された申請情報
+   */
+  public async update(
+    params: UpdateWorkflowParams,
+  ): Promise<WorkflowWithUsers> {
+    return await prisma.$transaction(async (tx) => {
+      await tx.workflowPanelUser.deleteMany({
+        where: { workflowId: params.id },
+      });
+
+      return await tx.workflow.update({
+        where: { id: params.id },
+        data: {
+          name: params.name,
+          description: params.description ?? null,
+          mcVersion: params.mcVersion ?? null,
+          periodDays: params.periodDays,
+          panelUsers: {
+            create: params.panelUsers.map((discordId) => ({ discordId })),
+          },
+        },
+        include: {
+          panelUsers: true,
+        },
+      });
     });
   }
 }

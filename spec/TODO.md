@@ -33,6 +33,8 @@
 - [x] `/mcserver` コマンド実装 (`src/commands/mcserver.ts`)
   - `/mcserver checkout` — モーダルフォーム表示（5項目の入力）→ DB記録 → 申請受付通知
   - `/mcserver reset_password` — 実行者の Discord ID から `PterodactylUser` を検索し、パスワードリセット
+- [ ] `/mcserver_admin workflow edit` コマンド実装
+  - PENDING の申請を編集。/mcserver checkout と同じ引数と同じ形式のモーダルを表示。なるべくクラスを再利用するように。
 
 ---
 

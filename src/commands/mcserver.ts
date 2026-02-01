@@ -4,15 +4,9 @@ import {
   Subcommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { RegisterChatInputCommand } from "@sapphire/decorators";
-import {
-  LabelBuilder,
-  MessageFlags,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  UserSelectMenuBuilder,
-} from "discord.js";
+import { MessageFlags } from "discord.js";
 import { pterodactylUserService } from "../domain/services/pterodactyl/PterodactylUserService.js";
+import { BaseCheckoutModalHandler } from "../interaction-handlers/workflow/WorkflowBaseModal.js";
 import { logger } from "../utils/log.js";
 import { prisma } from "../utils/prisma.js";
 
@@ -50,75 +44,10 @@ export class McServerCheckoutCommand extends Command {
       organizerId: organizer.id,
     });
 
-    const modal = new ModalBuilder()
-      .setCustomId(`checkout_modal?${params.toString()}`)
-      .setTitle("サーバー貸出申請");
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("サーバーの用途/企画名")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("name")
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder("例: 01/01 マイクラ正月福笑い")
-            .setRequired(true),
-        ),
-    );
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("貸出希望期間 (日数)")
-        .setDescription(
-          "イベント準備用の場合、イベントまでの日数を入力してください",
-        )
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("period")
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder("例: 30")
-            .setRequired(true),
-        ),
-    );
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("Minecraft バージョン")
-        .setDescription("空の場合、最新版が設定されます")
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("mc_version")
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder("例: 1.20.1")
-            .setRequired(false),
-        ),
-    );
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("パネル権限を付与する人")
-        .setUserSelectMenuComponent(
-          new UserSelectMenuBuilder()
-            .setCustomId("panel_users")
-            .setDefaultUsers(interaction.user.id) // デフォルトは申請者
-            .setMinValues(1)
-            .setMaxValues(10)
-            .setRequired(true),
-        ),
-    );
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("補足説明 (任意)")
-        .setDescription(
-          "イベント準備以外の申請の場合は、企画発足フォーラムへのリンクを記載してください",
-        )
-        .setTextInputComponent(
-          new TextInputBuilder()
-            .setCustomId("description")
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(false),
-        ),
+    const modal = BaseCheckoutModalHandler.build(
+      `checkout_modal?${params.toString()}`,
+      "サーバー貸出申請",
+      { panelUsers: [interaction.user.id] },
     );
 
     await interaction.showModal(modal);

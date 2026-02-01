@@ -5,9 +5,13 @@ import {
   Subcommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { RegisterChatInputCommand } from "@sapphire/decorators";
+import { MessageFlags } from "discord.js";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService.js";
+import { workflowService } from "@/domain/services/WorkflowService.js";
 import type { ServerBinding } from "@/generated/prisma/browser.js";
+import { WorkflowStatus } from "@/generated/prisma/client.js";
+import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal.js";
 import { logger } from "../utils/log.js";
 
 /**
@@ -18,6 +22,9 @@ import { logger } from "../utils/log.js";
   // サブコマンドグループ (hooksの前に設定する必要あり)
   builder.addSubcommandGroup((group) =>
     group.setName("server_binding").setDescription("サーバーエイリアス管理"),
+  );
+  builder.addSubcommandGroup((group) =>
+    group.setName("workflow").setDescription("申請管理"),
   );
 
   // コマンドの登録
@@ -194,5 +201,61 @@ export class McServerAdminStatusCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+}
+
+/**
+ * /mcserver_admin workflow edit コマンド
+ * PENDING の申請を編集する
+ */
+@RegisterSubCommandGroup("mcserver_admin", "workflow", (builder) =>
+  builder
+    .setName("edit")
+    .setDescription("PENDING の申請を編集")
+    .addIntegerOption((option) =>
+      option.setName("id").setDescription("申請ID").setRequired(true),
+    ),
+)
+export class McServerAdminWorkflowEditCommand extends Command {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const id = interaction.options.getInteger("id", true);
+
+    const workflow = await workflowService.findById(id);
+
+    if (!workflow) {
+      await interaction.reply({
+        content: "申請が見つかりませんでした。",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (workflow.status !== WorkflowStatus.PENDING) {
+      await interaction.reply({
+        content: "PENDING の申請のみ編集できます。",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const params = new URLSearchParams({
+      workflowId: String(workflow.id),
+    });
+
+    const modal = BaseCheckoutModalHandler.build(
+      `edit_modal?${params.toString()}`,
+      "申請編集",
+      {
+        name: workflow.name,
+        period: String(workflow.periodDays),
+        mcVersion: workflow.mcVersion ?? undefined,
+        panelUsers: workflow.panelUsers.map((u) => u.discordId),
+        description: workflow.description ?? undefined,
+      },
+    );
+
+    await interaction.showModal(modal);
   }
 }
