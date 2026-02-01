@@ -502,12 +502,19 @@ export class PteroCleanCommand extends Command {
       // 全ファイルを削除
       await pterodactylService.deleteAllFiles(serverId);
 
+      // Docker イメージを決定
+      const dockerImage =
+        pterodactylService.getJavaImageForMinecraftVersion(mcVersion);
+
       // MC バージョンのスタートアップ変数を設定
       await pterodactylService.setStartupVariable(
         serverId,
         "MINECRAFT_VERSION",
         mcVersion,
       );
+
+      // Docker イメージを設定
+      await pterodactylService.setDockerImage(serverId, dockerImage);
 
       // サーバーを再インストール
       await pterodactylService.reinstallServer(serverId);
@@ -516,6 +523,7 @@ export class PteroCleanCommand extends Command {
         `サーバー \`${serverId}\` をリセットしました。\n` +
           `- 全ファイル削除 ✓\n` +
           `- MC バージョン: \`${mcVersion}\` に設定 ✓\n` +
+          `- Docker イメージ: \`${dockerImage}\` ✓\n` +
           `- 再インストール実行 ✓`,
       );
     } catch (error) {

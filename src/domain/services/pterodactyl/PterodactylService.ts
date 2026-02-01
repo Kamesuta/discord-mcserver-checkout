@@ -1,3 +1,4 @@
+import semver from "semver";
 import { logger } from "../../../utils/log.js";
 import {
   type PendingOperation,
@@ -232,6 +233,54 @@ class PterodactylService extends PterodactylBaseService {
       );
       throw error;
     }
+  }
+
+  /**
+   * サーバーの Docker イメージを設定
+   * @param serverId サーバーID
+   * @param image イメージ名
+   */
+  public async setDockerImage(serverId: string, image: string): Promise<void> {
+    try {
+      await this._requestClientApi(
+        `/servers/${serverId}/settings/docker-image`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+            docker_image: image,
+            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+          }),
+        },
+      );
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} の Docker イメージ設定中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Minecraft バージョンに基づいて最適な Java Docker イメージを決定する
+   * @param mcVersion Minecraft バージョン (例: 1.20.1)
+   * @returns Docker イメージ名
+   */
+  public getJavaImageForMinecraftVersion(mcVersion: string): string {
+    const v = semver.coerce(mcVersion);
+    if (!v) {
+      // 判定できない場合は最新の Java 21 を返す
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    }
+
+    if (semver.satisfies(v, ">=1.20.5"))
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    if (semver.satisfies(v, ">=1.18.0"))
+      return "ghcr.io/pterodactyl/yolks:java_17";
+    if (semver.satisfies(v, ">=1.17.0"))
+      return "ghcr.io/pterodactyl/yolks:java_16";
+    return "ghcr.io/pterodactyl/yolks:java_8";
   }
 }
 
