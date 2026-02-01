@@ -353,6 +353,63 @@ class PterodactylService {
       throw error;
     }
   }
+
+  /**
+   * ユーザーのパスワードをリセット
+   * @param nickname ニックネーム
+   * @returns 新しいパスワード
+   */
+  public async resetPassword(nickname: string): Promise<string> {
+    try {
+      // ユーザーを検索
+      // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+      const users = await this._appRequest<{
+        data: {
+          attributes: {
+            id: number;
+            username: string;
+            email: string;
+            first_name: string;
+            last_name: string;
+          };
+        }[];
+      }>(`/users?filter[username]=${nickname}`);
+      // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+
+      const user = users.data.find(
+        (u) => u.attributes.username.toLowerCase() === nickname.toLowerCase(),
+      );
+
+      if (!user) {
+        throw new Error(`ユーザー \`${nickname}\` が見つかりませんでした。`);
+      }
+
+      // ランダムなパスワードを生成 (12文字)
+      const newPassword = Math.random().toString(36).slice(-12);
+
+      // パスワードを更新
+      await this._appRequest(`/users/${user.attributes.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+          email: user.attributes.email,
+          username: user.attributes.username,
+          first_name: user.attributes.first_name,
+          last_name: user.attributes.last_name,
+          password: newPassword,
+          // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+        }),
+      });
+
+      return newPassword;
+    } catch (error) {
+      logger.error(
+        `ユーザー ${nickname} のパスワードリセット中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }
 
 /** PterodactylService のシングルトンインスタンス */

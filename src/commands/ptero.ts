@@ -5,6 +5,7 @@ import {
   Subcommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { RegisterChatInputCommand } from "@sapphire/decorators";
+import { MessageFlags } from "discord.js";
 import { pterodactylService } from "@/domain/services/PterodactylService.js";
 import { logger } from "../utils/log.js";
 
@@ -304,6 +305,44 @@ export class PteroUserRegisterCommand extends Command {
       await pterodactylService.registerUser(nickname);
       await interaction.editReply(
         `「${nickname}」のユーザー登録が完了しました。`,
+      );
+    } catch (error) {
+      logger.error(error);
+      const message =
+        error instanceof Error ? error.message : "不明なエラーが発生しました";
+      await interaction.editReply(`エラーが発生しました: ${message}`);
+    }
+  }
+}
+
+/**
+ * /ptero user reset_password コマンド
+ * ユーザーのパスワードをリセット
+ */
+@RegisterSubCommandGroup("ptero", "user", (builder) =>
+  builder
+    .setName("reset_password")
+    .setDescription("ユーザーのパスワードをリセット")
+    .addStringOption((option) =>
+      option
+        .setName("nickname")
+        .setDescription("ニックネーム (半角英数)")
+        .setRequired(true),
+    ),
+)
+export class PteroUserResetPasswordCommand extends Command {
+  public override async chatInputRun(
+    interaction: Command.ChatInputCommandInteraction,
+  ) {
+    const nickname = interaction.options.getString("nickname", true);
+
+    // パスワードを表示するため自分にしか見えないようにする
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    try {
+      const newPassword = await pterodactylService.resetPassword(nickname);
+      await interaction.editReply(
+        `「${nickname}」のパスワードをリセットしました。\n新しいパスワード: \`${newPassword}\``,
       );
     } catch (error) {
       logger.error(error);
