@@ -1,5 +1,6 @@
-import type { ButtonInteraction } from "discord.js";
+import type { ButtonInteraction, TextChannel } from "discord.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
+import env from "@/utils/env.js";
 import { prisma } from "@/utils/prisma.js";
 import { ArchiveName } from "../services/ArchiveName.js";
 import { archiveService } from "../services/ArchiveService.js";
@@ -72,32 +73,27 @@ export async function completeReturn(
     status: WorkflowStatus.RETURNED,
   });
 
-  // 5. パネルユーザーへ返却通知
-  if (guild) {
-    for (const panelUser of workflow.panelUsers) {
-      try {
-        const user = await guild.members.fetch(panelUser.discordId);
-        await user.send(
-          `サーバー貸出が返却されました。\n` +
-            `企画: ${workflow.name}\n` +
-            `サーバーID: \`${serverId}\``,
-        );
-      } catch {
-        // DM送信失敗は無視
-      }
-    }
+  // 5. 通知チャンネルにパネルユーザーと主催者へ返却通知
+  try {
+    const channel = await interaction.client.channels.fetch(
+      env.DISCORD_NOTIFY_CHANNEL_ID,
+    );
+    if (channel?.isTextBased()) {
+      const panelUserMentions = workflow.panelUsers
+        .map((u) => `<@${u.discordId}>`)
+        .join(" ");
 
-    // 6. 主催者へ返却通知
-    try {
-      const organizer = await guild.members.fetch(workflow.organizerDiscordId);
-      await organizer.send(
-        `申請 (ID: ${workflow.id}) の返却が完了しました。\n` +
+      await (channel as TextChannel).send(
+        `${panelUserMentions} <@${workflow.organizerDiscordId}>\n` +
+          `**サーバー貸出が返却されました。**\n\n` +
+          `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +
           `サーバーID: \`${serverId}\``,
       );
-    } catch {
-      // DM送信失敗は無視
     }
+  } catch (error) {
+    // 通知送信失敗は無視（ログには記録される）
+    console.error("Failed to send return notification:", error);
   }
 
   await interaction.editReply(

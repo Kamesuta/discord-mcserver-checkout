@@ -1,6 +1,8 @@
 import type { SapphireClient } from "@sapphire/framework";
+import type { TextChannel } from "discord.js";
 import { workflowService } from "../../domain/services/WorkflowService.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
+import env from "../../utils/env.js";
 import { sapphireLogger } from "../../utils/log.js";
 import type { ScheduledTask } from "../Scheduler.js";
 
@@ -36,11 +38,11 @@ export class ReminderTask implements ScheduledTask {
       }
 
       // 期限までの残り日数を計算
-      const daysUntilDeadline = this.calculateDaysUntil(now, workflow.endDate);
+      const daysUntilDeadline = this._calculateDaysUntil(now, workflow.endDate);
 
       // 3日前または1日前の場合に通知
       if (daysUntilDeadline === 3 || daysUntilDeadline === 1) {
-        await this.sendReminder(
+        await this._sendReminder(
           client,
           workflow.organizerDiscordId,
           workflow,
@@ -60,7 +62,7 @@ export class ReminderTask implements ScheduledTask {
   /**
    * 指定日までの残り日数を計算する
    */
-  private calculateDaysUntil(from: Date, to: Date): number {
+  private _calculateDaysUntil(from: Date, to: Date): number {
     // 時刻を無視して日付のみで比較
     const fromDate = new Date(
       from.getFullYear(),
@@ -74,9 +76,9 @@ export class ReminderTask implements ScheduledTask {
   }
 
   /**
-   * 主催者にリマインド通知を送信する
+   * 通知チャンネルに主催者へのリマインド通知を送信する
    */
-  private async sendReminder(
+  private async _sendReminder(
     client: SapphireClient,
     organizerDiscordId: string,
     workflow: {
@@ -88,12 +90,22 @@ export class ReminderTask implements ScheduledTask {
     daysRemaining: number,
   ): Promise<void> {
     try {
-      const user = await client.users.fetch(organizerDiscordId);
+      const channel = await client.channels.fetch(
+        env.DISCORD_NOTIFY_CHANNEL_ID,
+      );
+      if (!channel?.isTextBased()) {
+        sapphireLogger.error(
+          `[ReminderTask] Notify channel ${env.DISCORD_NOTIFY_CHANNEL_ID} is not a text channel`,
+        );
+        return;
+      }
+
       const endDateStr =
         workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定";
 
-      await user.send(
-        `**【リマインド】サーバー貸出期限のお知らせ**\n\n` +
+      await (channel as TextChannel).send(
+        `<@${organizerDiscordId}> <@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
+          `**【リマインド】サーバー貸出期限のお知らせ**\n\n` +
           `企画: ${workflow.name}\n` +
           `申請ID: ${workflow.id}\n` +
           `サーバーID: \`${workflow.pteroServerId}\`\n` +
@@ -103,11 +115,11 @@ export class ReminderTask implements ScheduledTask {
       );
 
       sapphireLogger.info(
-        `[ReminderTask] Sent reminder to ${organizerDiscordId} for workflow ${workflow.id} (${daysRemaining} days remaining)`,
+        `[ReminderTask] Sent reminder for workflow ${workflow.id} (${daysRemaining} days remaining)`,
       );
     } catch (error) {
       sapphireLogger.error(
-        `[ReminderTask] Failed to send reminder to ${organizerDiscordId}:`,
+        `[ReminderTask] Failed to send reminder for workflow ${workflow.id}:`,
         error,
       );
     }

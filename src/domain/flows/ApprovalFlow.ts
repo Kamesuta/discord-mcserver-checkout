@@ -1,4 +1,8 @@
-import type { ButtonInteraction, ModalSubmitInteraction } from "discord.js";
+import type {
+  ButtonInteraction,
+  ModalSubmitInteraction,
+  TextChannel,
+} from "discord.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
 import env from "../../utils/env.js";
 import { prisma } from "../../utils/prisma.js";
@@ -84,31 +88,28 @@ export async function completeApproval(
     endDate,
   });
 
-  // 6. パネルユーザーへ通知
-  for (const panelUser of workflow.panelUsers) {
-    try {
-      const user = await guild.members.fetch(panelUser.discordId);
-      await user.send(
-        `サーバー貸出が承認されました！\n` +
-          `サーバーID: \`${availableServer.pteroId}\`\n` +
+  // 6. 通知チャンネルにパネルユーザーと主催者へ通知
+  try {
+    const channel = await interaction.client.channels.fetch(
+      env.DISCORD_NOTIFY_CHANNEL_ID,
+    );
+    if (channel?.isTextBased()) {
+      const panelUserMentions = workflow.panelUsers
+        .map((u) => `<@${u.discordId}>`)
+        .join(" ");
+
+      await (channel as TextChannel).send(
+        `${panelUserMentions} <@${workflow.organizerDiscordId}>\n` +
+          `**サーバー貸出が承認されました！**\n\n` +
+          `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +
+          `サーバーID: \`${availableServer.pteroId}\`\n` +
           `期限: ${endDate.toLocaleDateString("ja-JP")}`,
       );
-    } catch {
-      // DM送信失敗は無視
     }
-  }
-
-  // 7. 主催者へ通知
-  try {
-    const organizer = await guild.members.fetch(workflow.organizerDiscordId);
-    await organizer.send(
-      `申請 (ID: ${workflow.id}) が承認されました！\n` +
-        `割り当てサーバー: \`${availableServer.pteroId}\`\n` +
-        `期限: ${endDate.toLocaleDateString("ja-JP")}`,
-    );
-  } catch {
-    // DM送信失敗は無視
+  } catch (error) {
+    // 通知送信失敗は無視（ログには記録される）
+    console.error("Failed to send approval notification:", error);
   }
 
   await interaction.editReply(

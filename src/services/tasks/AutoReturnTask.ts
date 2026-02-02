@@ -45,7 +45,7 @@ export class AutoReturnTask implements ScheduledTask {
 
       // 期限切れチェック（endDateが過去）
       if (workflow.endDate < now) {
-        await this.notifyAdmins(client, workflow);
+        await this._notifyAdmins(client, workflow);
         notificationsSent++;
       }
     }
@@ -56,9 +56,9 @@ export class AutoReturnTask implements ScheduledTask {
   }
 
   /**
-   * 管理者チャンネルに返却処理の通知を送信する
+   * 通知チャンネルに返却処理の通知を送信する
    */
-  private async notifyAdmins(
+  private async _notifyAdmins(
     client: SapphireClient,
     workflow: {
       id: number;
@@ -69,10 +69,12 @@ export class AutoReturnTask implements ScheduledTask {
     },
   ): Promise<void> {
     try {
-      const channel = await client.channels.fetch(env.DISCORD_ADMIN_CHANNEL_ID);
+      const channel = await client.channels.fetch(
+        env.DISCORD_NOTIFY_CHANNEL_ID,
+      );
       if (!channel?.isTextBased()) {
         sapphireLogger.error(
-          `[AutoReturnTask] Admin channel ${env.DISCORD_ADMIN_CHANNEL_ID} is not a text channel`,
+          `[AutoReturnTask] Notify channel ${env.DISCORD_NOTIFY_CHANNEL_ID} is not a text channel`,
         );
         return;
       }
@@ -91,7 +93,8 @@ export class AutoReturnTask implements ScheduledTask {
       const embed = new EmbedBuilder()
         .setTitle(`⚠️ 自動返却通知 — ID: ${workflow.id}`)
         .setDescription(
-          `以下のサーバー貸出が期限切れです。返却処理を実行してください。`,
+          `<@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
+            `以下のサーバー貸出が期限切れです。返却処理を実行してください。`,
         )
         .setColor(0xff9800)
         .addFields(
@@ -115,6 +118,7 @@ export class AutoReturnTask implements ScheduledTask {
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
 
       await (channel as TextChannel).send({
+        content: `<@&${env.DISCORD_ADMIN_ROLE_ID}>`,
         embeds: [embed],
         components: [row],
       });
