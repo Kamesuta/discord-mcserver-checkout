@@ -50,9 +50,6 @@ export class Scheduler {
       `Starting scheduler with cron expression: ${this._cronExpression}`,
     );
 
-    // 即座に1回実行
-    this._runTasks();
-
     // 定期実行を開始
     this._job = schedule.scheduleJob(this._cronExpression, () => {
       this._runTasks();

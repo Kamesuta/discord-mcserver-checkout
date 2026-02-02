@@ -108,14 +108,22 @@ export class AutoReturnTask implements ScheduledTask {
           text: "返却ボタンをクリックして返却処理を開始してください",
         });
 
-      // 返却ボタン
+      // 延期ボタンと返却ボタン
       const params = new URLSearchParams({ workflowId: String(workflow.id) });
-      const button = new ButtonBuilder()
+      const extendButton = new ButtonBuilder()
+        .setCustomId(`extend-workflow?${params.toString()}`)
+        .setLabel("1週間延長")
+        .setStyle(ButtonStyle.Primary);
+
+      const returnButton = new ButtonBuilder()
         .setCustomId(`return-confirm?${params.toString()}`)
         .setLabel("返却を実行")
         .setStyle(ButtonStyle.Danger);
 
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        extendButton,
+        returnButton,
+      );
 
       await (channel as TextChannel).send({
         content: `<@&${env.DISCORD_ADMIN_ROLE_ID}>`,

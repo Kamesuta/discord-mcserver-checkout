@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { workflowService } from "@/domain/services/WorkflowService.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
+import { parseDate } from "@/utils/dateParser.js";
 import { logger } from "@/utils/log.js";
 
 @RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
@@ -30,12 +31,11 @@ export class McServerAdminCheckoutExtendCommand extends Command {
     await interaction.deferReply();
 
     try {
-      // 日付パース (スラッシュを形式的にハイフンに変換してパースしやすくする)
-      const normalizedDate = dateStr.replace(/\//g, "-");
-      const targetDate = new Date(`${normalizedDate}T00:00:00`);
-      if (Number.isNaN(targetDate.getTime())) {
+      // 日付パース
+      const targetDate = parseDate(dateStr);
+      if (!targetDate) {
         await interaction.editReply(
-          "日付の形式が正しくありません。`YYYY/MM/DD` で入力してください。",
+          "日付の形式が正しくありません。`YYYY/MM/DD` または `MM/DD` で入力してください。",
         );
         return;
       }
@@ -52,7 +52,7 @@ export class McServerAdminCheckoutExtendCommand extends Command {
           const periodDays = Math.ceil(
             (targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
           );
-          if (periodDays <= 0) {
+          if (periodDays < 0) {
             await interaction.editReply(
               "指定した日付は今日より前です。将来の日付を入力してください。",
             );

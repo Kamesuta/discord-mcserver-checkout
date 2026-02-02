@@ -73,18 +73,14 @@ export async function completeReturn(
     status: WorkflowStatus.RETURNED,
   });
 
-  // 5. 通知チャンネルにパネルユーザーと主催者へ返却通知
+  // 5. 通知チャンネルに主催者へ返却通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,
     );
     if (channel?.isTextBased()) {
-      const panelUserMentions = workflow.panelUsers
-        .map((u) => `<@${u.discordId}>`)
-        .join(" ");
-
       await (channel as TextChannel).send(
-        `${panelUserMentions} <@${workflow.organizerDiscordId}>\n` +
+        `<@${workflow.organizerDiscordId}>\n` +
           `**サーバー貸出が返却されました。**\n\n` +
           `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +

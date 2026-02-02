@@ -1,5 +1,10 @@
 import type { SapphireClient } from "@sapphire/framework";
-import type { TextChannel } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type TextChannel,
+} from "discord.js";
 import { workflowService } from "../../domain/services/WorkflowService.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
 import env from "../../utils/env.js";
@@ -103,16 +108,29 @@ export class ReminderTask implements ScheduledTask {
       const endDateStr =
         workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定";
 
-      await (channel as TextChannel).send(
-        `<@${organizerDiscordId}> <@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
+      // 延期ボタン
+      const params = new URLSearchParams({ workflowId: String(workflow.id) });
+      const extendButton = new ButtonBuilder()
+        .setCustomId(`extend-workflow?${params.toString()}`)
+        .setLabel("1週間延長")
+        .setStyle(ButtonStyle.Primary);
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        extendButton,
+      );
+
+      await (channel as TextChannel).send({
+        content:
+          `<@${organizerDiscordId}> <@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
           `**【リマインド】サーバー貸出期限のお知らせ**\n\n` +
           `企画: ${workflow.name}\n` +
           `申請ID: ${workflow.id}\n` +
           `サーバーID: \`${workflow.pteroServerId}\`\n` +
           `期限: ${endDateStr}\n` +
           `**残り ${daysRemaining} 日**\n\n` +
-          `期限が近づいています。延長が必要な場合は管理者にお問い合わせください。`,
-      );
+          `期限が近づいています。延長が必要な場合は下のボタンを押してください。`,
+        components: [row],
+      });
 
       sapphireLogger.info(
         `[ReminderTask] Sent reminder for workflow ${workflow.id} (${daysRemaining} days remaining)`,
