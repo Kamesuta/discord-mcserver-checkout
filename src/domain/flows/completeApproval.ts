@@ -2,6 +2,7 @@ import type { ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
 import env from "../../utils/env.js";
 import { prisma } from "../../utils/prisma.js";
+import { pterodactylCleanService } from "../services/pterodactyl/PterodactylCleanService.js";
 import { pterodactylUserService } from "../services/pterodactyl/PterodactylUserService.js";
 import { workflowService } from "../services/WorkflowService.js";
 
@@ -64,7 +65,13 @@ export async function completeApproval(
     );
   }
 
-  // 4. ステータスを ACTIVE に更新
+  // 4. サーバーをクリーン（初期状態リセット）
+  await pterodactylCleanService.clean(
+    availableServer.pteroId,
+    workflow.mcVersion ?? "",
+  );
+
+  // 5. ステータスを ACTIVE に更新
   const now = new Date();
   const endDate = new Date(
     now.getTime() + workflow.periodDays * 24 * 60 * 60 * 1000,
@@ -77,7 +84,7 @@ export async function completeApproval(
     endDate,
   });
 
-  // 5. パネルユーザーへ通知
+  // 6. パネルユーザーへ通知
   for (const panelUser of workflow.panelUsers) {
     try {
       const user = await guild.members.fetch(panelUser.discordId);
@@ -92,7 +99,7 @@ export async function completeApproval(
     }
   }
 
-  // 6. 主催者へ通知
+  // 7. 主催者へ通知
   try {
     const organizer = await guild.members.fetch(workflow.organizerDiscordId);
     await organizer.send(

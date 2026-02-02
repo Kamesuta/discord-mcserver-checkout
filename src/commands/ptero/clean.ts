@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService.js";
+import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService.js";
 import { logger } from "@/utils/log.js";
 
 @RegisterSubCommand("ptero", (builder) =>
@@ -29,28 +29,10 @@ export class PteroCleanCommand extends Command {
     await interaction.deferReply();
 
     try {
-      // サーバーを停止
-      await pterodactylService.setPowerState(serverId, "stop");
-
-      // 全ファイルを削除
-      await pterodactylService.deleteAllFiles(serverId);
-
-      // Docker イメージを決定
-      const dockerImage =
-        pterodactylService.getJavaImageForMinecraftVersion(mcVersion);
-
-      // MC バージョンのスタートアップ変数を設定
-      await pterodactylService.setStartupVariable(
+      const dockerImage = await pterodactylCleanService.clean(
         serverId,
-        "MINECRAFT_VERSION",
         mcVersion,
       );
-
-      // Docker イメージを設定
-      await pterodactylService.setDockerImage(serverId, dockerImage);
-
-      // サーバーを再インストール
-      await pterodactylService.reinstallServer(serverId);
 
       await interaction.editReply(
         `サーバー \`${serverId}\` をリセットしました。\n` +

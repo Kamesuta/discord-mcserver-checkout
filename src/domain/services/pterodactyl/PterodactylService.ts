@@ -1,4 +1,3 @@
-import semver from "semver";
 import { logger } from "../../../utils/log.js";
 import {
   type PendingOperation,
@@ -33,31 +32,6 @@ interface PterodactylServerResources {
 }
 
 /**
- * Pterodactyl API のファイル一覧レスポンス型
- */
-interface ListFilesResponse {
-  data: {
-    // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-    attributes: {
-      /** ファイル名 */
-      name: string;
-      /** ディレクトリかどうか */
-      is_dir: boolean;
-    };
-    // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
-  }[];
-}
-
-interface PterodactylServerDetails {
-  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-  attributes: {
-    /** サーバーがインストール中かどうか */
-    is_installing: boolean;
-  };
-  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
-}
-
-/**
  * Pterodactyl のサーバー操作を管理するサービスクラス
  */
 class PterodactylService extends PterodactylBaseService {
@@ -65,8 +39,6 @@ class PterodactylService extends PterodactylBaseService {
   private static readonly _POWER_POLL_INTERVAL = 2000;
   /** 電源操作のタイムアウト (ms) */
   private static readonly _POWER_POLL_TIMEOUT = 60000;
-  /** 再インストールのタイムアウト (ms) */
-  private static readonly _REINSTALL_POLL_TIMEOUT = 300000;
 
   /**
    * サーバーのステータスを取得
@@ -134,153 +106,6 @@ class PterodactylService extends PterodactylBaseService {
         return completion;
       },
     };
-  }
-
-  /**
-   * サーバーを再インストール（初期化）する
-   * @param serverId サーバーID
-   * @returns completion を await すると再インストール完了まで待機する
-   */
-  public async reinstallServer(
-    serverId: string,
-  ): Promise<PendingOperation<void, void>> {
-    try {
-      await this._requestClientApi(`/servers/${serverId}/settings/reinstall`, {
-        method: "POST",
-      });
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} の再インストール中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-
-    let completion: Promise<void> | undefined;
-
-    return {
-      response: undefined,
-      wait: () => {
-        if (completion) return completion;
-
-        completion = this._pollUntil(
-          async () => {
-            const data = await this._requestClientApi<PterodactylServerDetails>(
-              `/servers/${serverId}`,
-            );
-            return data.attributes.is_installing;
-          },
-          (isInstalling) => !isInstalling,
-          PterodactylService._POWER_POLL_INTERVAL,
-          PterodactylService._REINSTALL_POLL_TIMEOUT,
-          `サーバー ${serverId} の再インストールがタイムアウトしました`,
-        ).then(() => {});
-
-        return completion;
-      },
-    };
-  }
-
-  /**
-   * サーバーのファイルを削除
-   * @param serverId サーバーID
-   */
-  public async deleteAllFiles(serverId: string): Promise<void> {
-    try {
-      // サーバーのルートディレクトリ内のファイル一覧を取得
-      const data = await this._requestClientApi<ListFilesResponse>(
-        `/servers/${serverId}/files/list`,
-      );
-      const files = data.data.map((file) => file.attributes.name);
-
-      // ファイルが空の場合は何もしない
-      if (files.length === 0) return;
-
-      // ルートディレクトリ直下ファイルを削除
-      await this._requestClientApi(`/servers/${serverId}/files/delete`, {
-        method: "POST",
-        body: JSON.stringify({ root: "/", files }),
-      });
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} のファイル削除中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * サーバーのスタートアップ変数を設定
-   * @param serverId サーバーID
-   * @param key 変数名
-   * @param value 設定する値
-   */
-  public async setStartupVariable(
-    serverId: string,
-    key: string,
-    value: string,
-  ): Promise<void> {
-    try {
-      await this._requestClientApi(`/servers/${serverId}/startup/variable`, {
-        method: "PUT",
-        body: JSON.stringify({ key, value }),
-      });
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} のスタートアップ変数設定中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * サーバーの Docker イメージを設定
-   * @param serverId サーバーID
-   * @param image イメージ名
-   */
-  public async setDockerImage(serverId: string, image: string): Promise<void> {
-    try {
-      await this._requestClientApi(
-        `/servers/${serverId}/settings/docker-image`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-            docker_image: image,
-            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
-          }),
-        },
-      );
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} の Docker イメージ設定中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Minecraft バージョンに基づいて最適な Java Docker イメージを決定する
-   * @param mcVersion Minecraft バージョン (例: 1.20.1)
-   * @returns Docker イメージ名
-   */
-  public getJavaImageForMinecraftVersion(mcVersion: string): string {
-    const v = semver.coerce(mcVersion);
-    if (!v) {
-      // 判定できない場合は最新の Java 21 を返す
-      return "ghcr.io/pterodactyl/yolks:java_21";
-    }
-
-    if (semver.satisfies(v, ">=1.20.5"))
-      return "ghcr.io/pterodactyl/yolks:java_21";
-    if (semver.satisfies(v, ">=1.18.0"))
-      return "ghcr.io/pterodactyl/yolks:java_17";
-    if (semver.satisfies(v, ">=1.17.0"))
-      return "ghcr.io/pterodactyl/yolks:java_16";
-    return "ghcr.io/pterodactyl/yolks:java_8";
   }
 }
 

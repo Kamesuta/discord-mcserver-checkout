@@ -1,0 +1,225 @@
+import semver from "semver";
+import { logger } from "../../../utils/log.js";
+import {
+  type PendingOperation,
+  PterodactylBaseService,
+} from "./PterodactylBaseService.js";
+import { pterodactylService } from "./PterodactylService.js";
+
+/**
+ * Pterodactyl API のファイル一覧レスポンス型
+ */
+interface ListFilesResponse {
+  data: {
+    // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+    attributes: {
+      /** ファイル名 */
+      name: string;
+      /** ディレクトリかどうか */
+      is_dir: boolean;
+    };
+    // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+  }[];
+}
+
+/**
+ * Pterodactyl API のサーバー詳細レスポンス型（再インストール確認用）
+ */
+interface PterodactylServerDetails {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    /** サーバーがインストール中かどうか */
+    is_installing: boolean;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
+ * Pterodactyl のサーバークリーン操作を管理するサービスクラス
+ */
+class PterodactylCleanService extends PterodactylBaseService {
+  /** ポーリング間隔 (ms) */
+  private static readonly _POLL_INTERVAL = 2000;
+  /** 再インストールのタイムアウト (ms) */
+  private static readonly _REINSTALL_POLL_TIMEOUT = 300000;
+
+  /**
+   * サーバーを初期状態にリセットする
+   * サーバー停止・全ファイル削除・バージョン設定・再インストールを順次実行する
+   * @param serverId サーバーID
+   * @param mcVersion リセットするMCバージョン
+   * @returns 設定されたDocker イメージ名
+   */
+  public async clean(serverId: string, mcVersion: string): Promise<string> {
+    // サーバーを停止
+    const stopResult = await pterodactylService.setPowerState(serverId, "stop");
+    await stopResult.wait(); // 停止完了まで待機
+
+    // 全ファイルを削除
+    await this._deleteAllFiles(serverId);
+
+    // Docker イメージを決定
+    const dockerImage = this._getJavaImageForMinecraftVersion(mcVersion);
+
+    // MC バージョンのスタートアップ変数を設定
+    await this._setStartupVariable(serverId, "MINECRAFT_VERSION", mcVersion);
+
+    // Docker イメージを設定
+    await this._setDockerImage(serverId, dockerImage);
+
+    // サーバーを再インストール
+    const reinstallResult = await this._reinstallServer(serverId);
+    await reinstallResult.wait(); // 再インストール完了まで待機
+
+    return dockerImage;
+  }
+
+  /**
+   * サーバーのファイルを削除
+   * @param serverId サーバーID
+   */
+  private async _deleteAllFiles(serverId: string): Promise<void> {
+    try {
+      // サーバーのルートディレクトリ内のファイル一覧を取得
+      const data = await this._requestClientApi<ListFilesResponse>(
+        `/servers/${serverId}/files/list`,
+      );
+      const files = data.data.map((file) => file.attributes.name);
+
+      // ファイルが空の場合は何もしない
+      if (files.length === 0) return;
+
+      // ルートディレクトリ直下ファイルを削除
+      await this._requestClientApi(`/servers/${serverId}/files/delete`, {
+        method: "POST",
+        body: JSON.stringify({ root: "/", files }),
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のファイル削除中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Minecraft バージョンに基づいて最適な Java Docker イメージを決定する
+   * @param mcVersion Minecraft バージョン (例: 1.20.1)
+   * @returns Docker イメージ名
+   */
+  private _getJavaImageForMinecraftVersion(mcVersion: string): string {
+    const v = semver.coerce(mcVersion);
+    if (!v) {
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    }
+
+    if (semver.satisfies(v, ">=1.20.5"))
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    if (semver.satisfies(v, ">=1.18.0"))
+      return "ghcr.io/pterodactyl/yolks:java_17";
+    if (semver.satisfies(v, ">=1.17.0"))
+      return "ghcr.io/pterodactyl/yolks:java_16";
+    return "ghcr.io/pterodactyl/yolks:java_8";
+  }
+
+  /**
+   * サーバーのスタートアップ変数を設定
+   */
+  private async _setStartupVariable(
+    serverId: string,
+    key: string,
+    value: string,
+  ): Promise<void> {
+    try {
+      await this._requestClientApi(`/servers/${serverId}/startup/variable`, {
+        method: "PUT",
+        body: JSON.stringify({ key, value }),
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のスタートアップ変数設定中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーの Docker イメージを設定
+   * @param serverId サーバーID
+   * @param image イメージ名
+   */
+  private async _setDockerImage(
+    serverId: string,
+    image: string,
+  ): Promise<void> {
+    try {
+      await this._requestClientApi(
+        `/servers/${serverId}/settings/docker-image`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+            docker_image: image,
+            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+          }),
+        },
+      );
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} の Docker イメージ設定中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーを再インストール（初期化）する
+   * @param serverId サーバーID
+   * @returns completion を await すると再インストール完了まで待機する
+   */
+  private async _reinstallServer(
+    serverId: string,
+  ): Promise<PendingOperation<void, void>> {
+    try {
+      await this._requestClientApi(`/servers/${serverId}/settings/reinstall`, {
+        method: "POST",
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} の再インストール中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+
+    let completion: Promise<void> | undefined;
+
+    return {
+      response: undefined,
+      wait: () => {
+        if (completion) return completion;
+
+        completion = this._pollUntil(
+          async () => {
+            const data = await this._requestClientApi<PterodactylServerDetails>(
+              `/servers/${serverId}`,
+            );
+            return data.attributes.is_installing;
+          },
+          (isInstalling) => !isInstalling,
+          PterodactylCleanService._POLL_INTERVAL,
+          PterodactylCleanService._REINSTALL_POLL_TIMEOUT,
+          `サーバー ${serverId} の再インストールがタイムアウトしました`,
+        ).then(() => {});
+
+        return completion;
+      },
+    };
+  }
+}
+
+/** PterodactylCleanService のシングルトンインスタンス */
+export const pterodactylCleanService = new PterodactylCleanService();
