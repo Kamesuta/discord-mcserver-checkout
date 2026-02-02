@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { serverBindingService } from "@/domain/services/ServerBindingService.js";
 import { workflowService } from "@/domain/services/WorkflowService.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
@@ -39,11 +40,16 @@ export class McServerExtendCommand extends Command {
 
       await workflowService.updateEndDate(userWorkflow.id, newEndDate);
 
+      // サーバーのバインディング名を取得
+      const serverName = userWorkflow.pteroServerId
+        ? await serverBindingService.getName(userWorkflow.pteroServerId)
+        : null;
+
       await interaction.editReply(
         `サーバー貸出を1週間延長しました。\n\n` +
           `申請ID: ${userWorkflow.id}\n` +
           `企画: ${userWorkflow.name}\n` +
-          `サーバーID: \`${userWorkflow.pteroServerId}\`\n` +
+          `サーバー: \`${serverName ?? userWorkflow.pteroServerId ?? "未割り当て"}\`\n` +
           `新しい期限: ${newEndDate.toLocaleDateString("ja-JP")}`,
       );
 

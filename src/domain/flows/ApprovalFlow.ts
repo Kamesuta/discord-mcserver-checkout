@@ -99,7 +99,7 @@ export async function completeApproval(
           `**サーバー貸出が承認されました！**\n\n` +
           `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +
-          `サーバーID: \`${availableServer.pteroId}\`\n` +
+          `サーバー: \`${availableServer.name}\`\n` +
           `期限: ${endDate.toLocaleDateString("ja-JP")}`,
       );
     }
@@ -109,6 +109,6 @@ export async function completeApproval(
   }
 
   await interaction.editReply(
-    `承認完了！サーバー \`${availableServer.pteroId}\` を割り当てました。\n期限: ${endDate.toLocaleDateString("ja-JP")}`,
+    `承認完了！サーバー \`${availableServer.name}\` を割り当てました。\n期限: ${endDate.toLocaleDateString("ja-JP")}`,
   );
 }

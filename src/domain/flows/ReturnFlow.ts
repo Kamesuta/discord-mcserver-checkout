@@ -6,6 +6,7 @@ import { ArchiveName } from "../services/ArchiveName.js";
 import { archiveService } from "../services/ArchiveService.js";
 import { pterodactylCleanService } from "../services/pterodactyl/PterodactylCleanService.js";
 import { pterodactylUserService } from "../services/pterodactyl/PterodactylUserService.js";
+import { serverBindingService } from "../services/ServerBindingService.js";
 import { workflowService } from "../services/WorkflowService.js";
 
 /**
@@ -30,6 +31,9 @@ export async function completeReturn(
 
   const serverId = workflow.pteroServerId;
   const guild = interaction.guild;
+
+  // サーバーのバインディング名を取得
+  const serverName = await serverBindingService.getName(serverId);
 
   // フォルダ名を構築: [ID]_YYYYMMdd_企画名_[Name]主催
   let organizerName = workflow.organizerDiscordId;
@@ -84,7 +88,7 @@ export async function completeReturn(
           `**サーバー貸出が返却されました。**\n\n` +
           `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +
-          `サーバーID: \`${serverId}\``,
+          `サーバーID: \`${serverName ?? serverId}\``,
       );
     }
   } catch (error) {
@@ -93,6 +97,6 @@ export async function completeReturn(
   }
 
   await interaction.editReply(
-    `返却完了！サーバー \`${serverId}\` は初期化されました。`,
+    `返却完了！サーバー \`${serverName ?? serverId}\` は初期化されました。`,
   );
 }

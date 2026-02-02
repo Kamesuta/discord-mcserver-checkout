@@ -9,6 +9,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService.js";
+import { serverBindingService } from "@/domain/services/ServerBindingService.js";
 import { workflowService } from "@/domain/services/WorkflowService.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
@@ -62,6 +63,11 @@ export class McServerAdminCheckoutReturnCommand extends Command {
       );
       const locked = backups.filter((b) => b.attributes.is_locked);
 
+      // サーバーのバインディング名を取得
+      const serverName = await serverBindingService.getName(
+        workflow.pteroServerId,
+      );
+
       // Embed 作成
       const embed = new EmbedBuilder()
         .setTitle(`返却 — ID: ${workflow.id} — ${workflow.name}`)
@@ -74,7 +80,10 @@ export class McServerAdminCheckoutReturnCommand extends Command {
               .map((u) => `<@${u.discordId}>`)
               .join(", "),
           },
-          { name: "サーバーID", value: `\`${workflow.pteroServerId}\`` },
+          {
+            name: "サーバー",
+            value: `\`${serverName ?? workflow.pteroServerId}\``,
+          },
           {
             name: "期限",
             value: workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定",

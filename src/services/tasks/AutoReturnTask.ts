@@ -6,6 +6,7 @@ import {
   EmbedBuilder,
   type TextChannel,
 } from "discord.js";
+import { serverBindingService } from "../../domain/services/ServerBindingService.js";
 import { workflowService } from "../../domain/services/WorkflowService.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
 import env from "../../utils/env.js";
@@ -89,6 +90,11 @@ export class AutoReturnTask implements ScheduledTask {
           )
         : 0;
 
+      // サーバーのバインディング名を取得
+      const serverName = workflow.pteroServerId
+        ? await serverBindingService.getName(workflow.pteroServerId)
+        : null;
+
       // Embed 作成
       const embed = new EmbedBuilder()
         .setTitle(`⚠️ 自動返却通知 — ID: ${workflow.id}`)
@@ -100,7 +106,10 @@ export class AutoReturnTask implements ScheduledTask {
         .addFields(
           { name: "企画名", value: workflow.name },
           { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
-          { name: "サーバーID", value: `\`${workflow.pteroServerId}\`` },
+          {
+            name: "サーバー",
+            value: `\`${serverName ?? workflow.pteroServerId ?? "未割り当て"}\``,
+          },
           { name: "期限", value: endDateStr },
           { name: "期限超過", value: `${overdueDays} 日経過` },
         )

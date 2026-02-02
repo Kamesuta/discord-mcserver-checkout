@@ -63,6 +63,18 @@ class ServerBindingService {
     }
     return pteroId;
   }
+
+  /**
+   * Pterodactyl IDからエイリアスを取得
+   * @param pteroId Pterodactyl ID (例: 354dc039)
+   * @returns エイリアス、見つからない場合はnull
+   */
+  async getName(pteroId: string): Promise<string | null> {
+    const binding = await prisma.serverBinding.findFirst({
+      where: { pteroId },
+    });
+    return binding?.name ?? null;
+  }
 }
 
 export const serverBindingService = new ServerBindingService();

@@ -5,6 +5,7 @@ import {
   ButtonStyle,
   type TextChannel,
 } from "discord.js";
+import { serverBindingService } from "../../domain/services/ServerBindingService.js";
 import { workflowService } from "../../domain/services/WorkflowService.js";
 import { WorkflowStatus } from "../../generated/prisma/client.js";
 import env from "../../utils/env.js";
@@ -108,6 +109,11 @@ export class ReminderTask implements ScheduledTask {
       const endDateStr =
         workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定";
 
+      // サーバーのバインディング名を取得
+      const serverName = workflow.pteroServerId
+        ? await serverBindingService.getName(workflow.pteroServerId)
+        : null;
+
       // 延期ボタン
       const params = new URLSearchParams({ workflowId: String(workflow.id) });
       const extendButton = new ButtonBuilder()
@@ -125,7 +131,7 @@ export class ReminderTask implements ScheduledTask {
           `**【リマインド】サーバー貸出期限のお知らせ**\n\n` +
           `企画: ${workflow.name}\n` +
           `申請ID: ${workflow.id}\n` +
-          `サーバーID: \`${workflow.pteroServerId}\`\n` +
+          `サーバー: \`${serverName ?? workflow.pteroServerId ?? "未割り当て"}\`\n` +
           `期限: ${endDateStr}\n` +
           `**残り ${daysRemaining} 日**\n\n` +
           `期限が近づいています。延長が必要な場合は下のボタンを押してください。`,

@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
+import { serverBindingService } from "@/domain/services/ServerBindingService.js";
 import { workflowService } from "@/domain/services/WorkflowService.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
@@ -38,11 +39,16 @@ export class McServerAdminCheckoutListCommand extends Command {
             )
           : null;
 
+        // サーバーのバインディング名を取得
+        const serverName = wf.pteroServerId
+          ? await serverBindingService.getName(wf.pteroServerId)
+          : null;
+
         embed.addFields({
           name: `ID: ${wf.id} — ${wf.name}`,
           value: [
             `主催者: <@${wf.organizerDiscordId}>`,
-            `サーバーID: \`${wf.pteroServerId ?? "未割り当て"}\``,
+            `サーバー: \`${serverName ?? wf.pteroServerId ?? "未割り当て"}\``,
             `開始日: ${wf.startDate?.toLocaleDateString("ja-JP") ?? "未設定"}`,
             `終了日: ${wf.endDate?.toLocaleDateString("ja-JP") ?? "未設定"}`,
             `残り: ${remainingDays !== null ? `${remainingDays}日` : "未設定"}`,
