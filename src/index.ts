@@ -9,6 +9,9 @@ import env from "./utils/env.js";
 import { sapphireLogger } from "./utils/log.js";
 import { srcDir } from "./utils/workdir.js";
 import "@kaname-png/plugin-subcommands-advanced/register";
+import { Scheduler } from "./services/Scheduler.js";
+import { AutoReturnTask } from "./services/tasks/AutoReturnTask.js";
+import { ReminderTask } from "./services/tasks/ReminderTask.js";
 
 // このBOTはGUILD_IDのサーバーのみで動作する (他鯖で動作させない)
 ApplicationCommandRegistries.setDefaultGuildIds([env.GUILD_ID]);
@@ -37,6 +40,13 @@ try {
   client.logger.info("Logging in");
   await client.login();
   client.logger.info(`Logged in as ${client.user?.tag ?? "Unknown"}`);
+
+  // スケジューラーの初期化と起動（毎日18時に実行）
+  const scheduler = new Scheduler(client, "0 18 * * *");
+  scheduler.registerTask(new ReminderTask());
+  scheduler.registerTask(new AutoReturnTask());
+  scheduler.start();
+  client.logger.info("Scheduler started");
 } catch (error) {
   client.logger.fatal(error);
   await client.destroy();

@@ -21,6 +21,8 @@ const env = cleanEnv(process.env, {
   DISCORD_PANEL_USER_ROLE_ID: str(),
   /** rcloneの保存先ベースパス (例: gdrive:/path/to/dir) */
   RCLONE_BASE_PATH: str(),
+  /** 管理者通知用チャンネルID */
+  DISCORD_ADMIN_CHANNEL_ID: str(),
   // biome-ignore-end lint/style/useNamingConvention: 環境変数の定義のため大文字使用
 });
 
