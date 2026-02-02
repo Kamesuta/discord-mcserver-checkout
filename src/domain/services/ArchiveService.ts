@@ -1,8 +1,19 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { logger } from "@/utils/log.js";
-import { getWorkdirPath } from "@/utils/workdir.js";
+import type { ArchiveName } from "./ArchiveName.js";
 import { pterodactylBackupService } from "./pterodactyl/PterodactylBackupService.js";
 import { rcloneService } from "./RcloneService.js";
+
+/**
+ * アーカイブ対象のバックアップ
+ */
+interface BackupTarget {
+  uuid: string;
+  createdAt: string;
+  supplement?: string;
+}
 
 /**
  * バックアップのアーカイブ（ダウンロード → リモート転送）を管理するサービス
@@ -13,11 +24,13 @@ class ArchiveService {
    * ロック済みバックアップと一時バックアップ（最新ファイル状態）を
    * ダウンロードし rclone で転送し、ロック済みバックアップのロックを解除する
    * @param serverId サーバーID
-   * @param remotePath rclone アップロード先のサブパス
+   * @param archiveName アーカイブの名前構築オブジェクト
+   * @param tempBackupSupplement 一時バックアップのファイル名補足（任意）
    */
   public async archiveBackup(
     serverId: string,
-    remotePath: string,
+    archiveName: ArchiveName,
+    tempBackupSupplement?: string,
   ): Promise<void> {
     // バックアップ制限と現在の一覧を同時に取得
     const [limit, backups] = await Promise.all([
@@ -66,10 +79,21 @@ class ArchiveService {
 
     try {
       // アーカイブ対象: ロック済みバックアップ + 一時バックアップ
-      const targets = [...locked.map((b) => b.attributes.uuid), tempBackupUuid];
+      const targets: BackupTarget[] = [
+        ...locked.map((b) => ({
+          uuid: b.attributes.uuid,
+          createdAt: b.attributes.created_at,
+          supplement: b.attributes.name,
+        })),
+        {
+          uuid: tempBackupUuid,
+          createdAt: now.toISOString(),
+          supplement: tempBackupSupplement,
+        },
+      ];
 
-      for (const uuid of targets) {
-        await this._downloadAndUpload(serverId, uuid, remotePath);
+      for (const target of targets) {
+        await this._downloadAndUpload(serverId, target, archiveName);
       }
 
       // 全ロック済みバックアップのロック解除
@@ -96,27 +120,30 @@ class ArchiveService {
    */
   private async _downloadAndUpload(
     serverId: string,
-    backupUuid: string,
-    remotePath: string,
+    backup: BackupTarget,
+    archiveName: ArchiveName,
   ): Promise<void> {
-    const backupDir = getWorkdirPath("backup");
-    await mkdir(backupDir, { recursive: true });
-
-    const fileName = `${backupUuid}.tar.gz`;
-    const filePath = `${backupDir}/${fileName}`;
+    // ファイル名: [バックアップの日付][_補足].tar.gz
+    const fileName = archiveName.getFileName(
+      backup.createdAt,
+      backup.supplement,
+    );
+    // 一時フォルダにダウンロード
+    const localPath = join(tmpdir(), fileName);
 
     try {
       const data = await pterodactylBackupService.downloadBackup(
         serverId,
-        backupUuid,
+        backup.uuid,
       );
-      await writeFile(filePath, Buffer.from(data));
-      await rcloneService.upload(filePath, remotePath);
+      await writeFile(localPath, Buffer.from(data));
+      // フォルダ名/ 配下にファイルをアップロード
+      await rcloneService.upload(localPath, archiveName.getFolderName());
     } finally {
       try {
-        await unlink(filePath);
+        await unlink(localPath);
       } catch {
-        logger.error(`一時バックアップファイル削除失敗: ${filePath}`);
+        logger.error(`一時バックアップファイル削除失敗: ${localPath}`);
       }
     }
   }

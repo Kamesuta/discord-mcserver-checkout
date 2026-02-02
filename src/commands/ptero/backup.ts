@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { ArchiveName } from "@/domain/services/ArchiveName.js";
 import { archiveService } from "@/domain/services/ArchiveService.js";
 import { logger } from "@/utils/log.js";
 
@@ -22,7 +23,13 @@ export class PteroBackupCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await archiveService.archiveBackup(serverId, serverId);
+      const archiveName = new ArchiveName({
+        workflowId: 0,
+        workflowName: "Backup",
+        organizerName: serverId,
+        startDate: new Date(),
+      });
+      await archiveService.archiveBackup(serverId, archiveName);
 
       await interaction.editReply(
         `サーバー \`${serverId}\` のバックアップをアーカイブしました。\n` +

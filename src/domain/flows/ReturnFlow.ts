@@ -1,6 +1,7 @@
 import type { ModalSubmitInteraction } from "discord.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { prisma } from "@/utils/prisma.js";
+import { ArchiveName } from "../services/ArchiveName.js";
 import { archiveService } from "../services/ArchiveService.js";
 import { pterodactylCleanService } from "../services/pterodactyl/PterodactylCleanService.js";
 import { pterodactylUserService } from "../services/pterodactyl/PterodactylUserService.js";
@@ -31,9 +32,30 @@ export async function completeReturn(
   }
 
   const serverId = workflow.pteroServerId;
+  const guild = interaction.guild;
+
+  // フォルダ名を構築: [ID]_YYYYMMdd_企画名_[Name]主催
+  let organizerName = workflow.organizerDiscordId;
+  if (guild) {
+    try {
+      const organizer = await guild.members.fetch(workflow.organizerDiscordId);
+      organizerName = organizer.displayName;
+    } catch {
+      // ユーザー情報取得失敗時は Discord ID を使用
+    }
+  }
+
+  const startDate = workflow.startDate ?? new Date();
+  const archiveName = new ArchiveName({
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    organizerName,
+    startDate,
+    mcVersion: workflow.mcVersion ?? undefined,
+  });
 
   // 1. バックアップアーカイブ（一時バックアップ作成 + ロック済み + rclone アップロード + ロック解除）
-  await archiveService.archiveBackup(serverId, String(workflow.id));
+  await archiveService.archiveBackup(serverId, archiveName, comment);
 
   // 2. サーバー再インストール（初期化）
   await pterodactylCleanService.clean(serverId, workflow.mcVersion ?? "");
@@ -53,8 +75,6 @@ export async function completeReturn(
     id: workflow.id,
     status: WorkflowStatus.RETURNED,
   });
-
-  const guild = interaction.guild;
 
   // 5. パネルユーザーへ返却通知
   if (guild) {
