@@ -1,0 +1,126 @@
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { logger } from "@/utils/log.js";
+import { getWorkdirPath } from "@/utils/workdir.js";
+import { pterodactylBackupService } from "./pterodactyl/PterodactylBackupService.js";
+import { rcloneService } from "./RcloneService.js";
+
+/**
+ * バックアップのアーカイブ（ダウンロード → リモート転送）を管理するサービス
+ */
+class ArchiveService {
+  /**
+   * サーバーのバックアップをアーカイブする
+   * ロック済みバックアップと一時バックアップ（最新ファイル状態）を
+   * ダウンロードし rclone で転送し、ロック済みバックアップのロックを解除する
+   * @param serverId サーバーID
+   * @param remotePath rclone アップロード先のサブパス
+   */
+  public async archiveBackup(
+    serverId: string,
+    remotePath: string,
+  ): Promise<void> {
+    // バックアップ制限と現在の一覧を同時に取得
+    const [limit, backups] = await Promise.all([
+      pterodactylBackupService.getBackupLimit(serverId),
+      pterodactylBackupService.listBackups(serverId),
+    ]);
+
+    // アーカイブ対象のロック済みバックアップ
+    const locked = backups.filter((b) => b.attributes.is_locked);
+
+    // 制限に達している場合は一番古いロック済みでないバックアップを削除
+    if (backups.length >= limit) {
+      const oldest = backups
+        .filter((b) => !b.attributes.is_locked)
+        .sort(
+          (a, b) =>
+            new Date(a.attributes.created_at).getTime() -
+            new Date(b.attributes.created_at).getTime(),
+        )[0];
+
+      if (!oldest) {
+        throw new Error(
+          "バックアップ制限に達しており、削除可能なバックアップがありません。",
+        );
+      }
+
+      await pterodactylBackupService.deleteBackup(
+        serverId,
+        oldest.attributes.uuid,
+      );
+    }
+
+    // 一時バックアップを作成（最新ファイル状態をキャプチャ）
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const backupName =
+      `[Bot] ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const created = await pterodactylBackupService.createBackup(
+      serverId,
+      backupName,
+    );
+    const tempBackupUuid = created.response.attributes.uuid;
+    await created.wait();
+
+    try {
+      // アーカイブ対象: ロック済みバックアップ + 一時バックアップ
+      const targets = [...locked.map((b) => b.attributes.uuid), tempBackupUuid];
+
+      for (const uuid of targets) {
+        await this._downloadAndUpload(serverId, uuid, remotePath);
+      }
+
+      // 全ロック済みバックアップのロック解除
+      for (const backup of locked) {
+        await pterodactylBackupService.toggleLock(
+          serverId,
+          backup.attributes.uuid,
+        );
+      }
+    } finally {
+      // 一時バックアップを削除
+      try {
+        await pterodactylBackupService.deleteBackup(serverId, tempBackupUuid);
+      } catch {
+        logger.error(
+          `一時バックアップ (${tempBackupUuid}) の削除に失敗しました。`,
+        );
+      }
+    }
+  }
+
+  /**
+   * バックアップをダウンロードし rclone で転送する
+   */
+  private async _downloadAndUpload(
+    serverId: string,
+    backupUuid: string,
+    remotePath: string,
+  ): Promise<void> {
+    const backupDir = getWorkdirPath("backup");
+    await mkdir(backupDir, { recursive: true });
+
+    const fileName = `${backupUuid}.tar.gz`;
+    const filePath = `${backupDir}/${fileName}`;
+
+    try {
+      const data = await pterodactylBackupService.downloadBackup(
+        serverId,
+        backupUuid,
+      );
+      await writeFile(filePath, Buffer.from(data));
+      await rcloneService.upload(filePath, remotePath);
+    } finally {
+      try {
+        await unlink(filePath);
+      } catch {
+        logger.error(`一時バックアップファイル削除失敗: ${filePath}`);
+      }
+    }
+  }
+}
+
+/** ArchiveService のシングルトンインスタンス */
+export const archiveService = new ArchiveService();
