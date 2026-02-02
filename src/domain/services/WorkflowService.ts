@@ -23,6 +23,8 @@ export interface BaseWorkflowParams {
   periodDays: number;
   /** パネル権限付与対象ユーザーの Discord ユーザーIDのリスト */
   panelUsers: string[];
+  /** イベント開催日 */
+  eventDate?: Date;
 }
 
 /** 申請作成パラメータ */
@@ -71,6 +73,7 @@ export class WorkflowService {
         organizerDiscordId: params.organizerDiscordId,
         mcVersion: params.mcVersion,
         periodDays: params.periodDays,
+        eventDate: params.eventDate,
         status: WorkflowStatus.PENDING,
         panelUsers: {
           create: params.panelUsers.map((discordId) => ({ discordId })),
@@ -171,6 +174,7 @@ export class WorkflowService {
           description: params.description ?? null,
           mcVersion: params.mcVersion ?? null,
           periodDays: params.periodDays,
+          eventDate: params.eventDate ?? null,
           panelUsers: {
             create: params.panelUsers.map((discordId) => ({ discordId })),
           },

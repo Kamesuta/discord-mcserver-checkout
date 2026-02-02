@@ -11,12 +11,12 @@ export class ArchiveName {
     workflowId: number;
     workflowName: string;
     organizerName: string;
-    startDate: Date;
+    eventDate: Date;
     mcVersion?: string;
   }) {
-    const yyyy = options.startDate.getFullYear();
-    const mm = String(options.startDate.getMonth() + 1).padStart(2, "0");
-    const dd = String(options.startDate.getDate()).padStart(2, "0");
+    const yyyy = options.eventDate.getFullYear();
+    const mm = String(options.eventDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(options.eventDate.getDate()).padStart(2, "0");
     const dateStr = `${yyyy}-${mm}-${dd}`;
 
     const sanitizedWorkflowName = this._sanitizePath(options.workflowName);
@@ -57,8 +57,8 @@ export class ArchiveName {
    */
   getFileName(backupCreatedAt: string, backupSupplement?: string): string {
     const dateStr = this._formatBackupDate(backupCreatedAt);
-    const supplementPart = backupSupplement ? `_${backupSupplement}` : "";
-    return `${dateStr}${supplementPart}.tar.gz`;
+    const supplementPart = backupSupplement ? `[${backupSupplement}]_` : "";
+    return `${supplementPart}${dateStr}.tar.gz`;
   }
 
   /**

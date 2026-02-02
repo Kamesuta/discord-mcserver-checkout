@@ -58,6 +58,9 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
     modal.addLabelComponents(
       new LabelBuilder()
         .setLabel("サーバーの用途/企画名")
+        .setDescription(
+          "日付␣企画名 の形式で入力 (スペース区切りで日付と企画名を記載)",
+        )
         .setTextInputComponent(nameInput),
     );
 
@@ -131,16 +134,82 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
   }
 
   /**
+   * 日付と企画名を解析する
+   * @param input "日付 企画名" 形式の文字列
+   * @returns { eventDate: Date | undefined, name: string }
+   */
+  private static _parseNameWithDate(input: string): {
+    eventDate?: Date;
+    name: string;
+  } {
+    const match = input.match(
+      /^((?:\d{4}[-/])?\d{1,2}[-/]\d{1,2})[\s\u3000]+(.+)$/,
+    );
+    if (!match) {
+      // 日付が含まれていない場合、そのまま企画名として扱う
+      return { name: input };
+    }
+
+    const [, dateStr, eventName] = match;
+    const parts = dateStr.split(/[-/]/);
+
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (parts.length === 2) {
+      // MM/DD 形式
+      month = Number.parseInt(parts[0], 10);
+      day = Number.parseInt(parts[1], 10);
+
+      // 今年として解釈
+      const now = new Date();
+      year = now.getFullYear();
+
+      // 過去の日付になる場合、来年にする
+      const eventDate = new Date(year, month - 1, day);
+      if (eventDate < now) {
+        year += 1;
+      }
+    } else if (parts.length === 3) {
+      // YYYY/MM/DD 形式
+      year = Number.parseInt(parts[0], 10);
+      month = Number.parseInt(parts[1], 10);
+      day = Number.parseInt(parts[2], 10);
+    } else {
+      // 不正な形式の場合、企画名として扱う
+      return { name: input };
+    }
+
+    const eventDate = new Date(year, month - 1, day);
+
+    // 日付が有効かチェック
+    if (
+      Number.isNaN(eventDate.getTime()) ||
+      eventDate.getMonth() !== month - 1
+    ) {
+      // 無効な日付の場合、企画名として扱う
+      return { name: input };
+    }
+
+    return { eventDate, name: eventName };
+  }
+
+  /**
    * モーダルフィールドを抽出し、バリデーションを行う。
    * バリデーション失敗時はエラーメッセージを送信し null を返す。
    */
   protected async extractFields(
     interaction: ModalSubmitInteraction,
   ): Promise<BaseWorkflowParams | null> {
-    const name = interaction.fields.getTextInputValue("name");
+    const nameInput = interaction.fields.getTextInputValue("name");
     const description = interaction.fields.getTextInputValue("description");
     const mcVersion = interaction.fields.getTextInputValue("mc-version");
     const periodStr = interaction.fields.getTextInputValue("period");
+
+    // 日付と企画名をパース
+    const { eventDate, name } =
+      BaseCheckoutModalHandler._parseNameWithDate(nameInput);
 
     const panelUsersField = interaction.fields.fields.get("panel-users");
     const panelUsers =
@@ -174,6 +243,7 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
       mcVersion: mcVersion || undefined,
       periodDays: period,
       panelUsers,
+      eventDate,
     };
   }
 

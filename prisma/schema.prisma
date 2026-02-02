@@ -44,6 +44,8 @@ model Workflow {
   pteroServerId      String?
   /// 貸出開始日（割り当て後に埋まる）
   startDate          DateTime?
+  /// イベント開催日
+  eventDate          DateTime?
   /// 貸出終了日（割り当て後に埋まる）
   endDate            DateTime?
   /// 作成日時

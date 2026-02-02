@@ -10,7 +10,7 @@ import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/Workfl
 @RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
   builder
     .setName("edit")
-    .setDescription("PENDING の申請を編集")
+    .setDescription("PENDING/ACTIVE の申請を編集")
     .addIntegerOption((option) =>
       option.setName("id").setDescription("申請ID").setRequired(true),
     ),
@@ -31,9 +31,12 @@ export class McServerAdminWorkflowEditCommand extends Command {
       return;
     }
 
-    if (workflow.status !== WorkflowStatus.PENDING) {
+    if (
+      workflow.status !== WorkflowStatus.PENDING &&
+      workflow.status !== WorkflowStatus.ACTIVE
+    ) {
       await interaction.reply({
-        content: "PENDING の申請のみ編集できます。",
+        content: "PENDING または ACTIVE の申請のみ編集できます。",
         flags: MessageFlags.Ephemeral,
       });
       return;

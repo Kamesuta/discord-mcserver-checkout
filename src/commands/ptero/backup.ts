@@ -27,7 +27,7 @@ export class PteroBackupCommand extends Command {
         workflowId: 0,
         workflowName: "Backup",
         organizerName: serverId,
-        startDate: new Date(),
+        eventDate: new Date(),
       });
       await archiveService.archiveBackup(serverId, archiveName);
 

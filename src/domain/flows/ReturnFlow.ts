@@ -1,4 +1,4 @@
-import type { ModalSubmitInteraction } from "discord.js";
+import type { ButtonInteraction } from "discord.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { prisma } from "@/utils/prisma.js";
 import { ArchiveName } from "../services/ArchiveName.js";
@@ -9,16 +9,12 @@ import { workflowService } from "../services/WorkflowService.js";
 
 /**
  * 返却処理の本体：アーカイブ・サーバー再インストール・権限剥奪・通知
- * @param interaction モーダルのインタラクション（deferReply済み）
+ * @param interaction ボタンのインタラクション（deferReply済み）
  * @param workflowId ワークフロー ID
- * @param returnDate 返却日（モーダル入力の日付文字列）
- * @param comment 補足コメント
  */
 export async function completeReturn(
-  interaction: ModalSubmitInteraction,
+  interaction: ButtonInteraction,
   workflowId: number,
-  returnDate: string,
-  comment: string | undefined,
 ): Promise<void> {
   const workflow = await workflowService.findById(workflowId);
   if (!workflow || !workflow.pteroServerId) {
@@ -45,17 +41,17 @@ export async function completeReturn(
     }
   }
 
-  const startDate = workflow.startDate ?? new Date();
+  const eventDate = workflow.eventDate ?? new Date();
   const archiveName = new ArchiveName({
     workflowId: workflow.id,
     workflowName: workflow.name,
     organizerName,
-    startDate,
+    eventDate,
     mcVersion: workflow.mcVersion ?? undefined,
   });
 
   // 1. バックアップアーカイブ（一時バックアップ作成 + ロック済み + rclone アップロード + ロック解除）
-  await archiveService.archiveBackup(serverId, archiveName, comment);
+  await archiveService.archiveBackup(serverId, archiveName, "★");
 
   // 2. サーバー再インストール（初期化）
   await pterodactylCleanService.clean(serverId, workflow.mcVersion ?? "");
@@ -84,9 +80,7 @@ export async function completeReturn(
         await user.send(
           `サーバー貸出が返却されました。\n` +
             `企画: ${workflow.name}\n` +
-            `サーバーID: \`${serverId}\`\n` +
-            `返却日: ${returnDate}` +
-            (comment ? `\nコメント: ${comment}` : ""),
+            `サーバーID: \`${serverId}\``,
         );
       } catch {
         // DM送信失敗は無視
@@ -99,9 +93,7 @@ export async function completeReturn(
       await organizer.send(
         `申請 (ID: ${workflow.id}) の返却が完了しました。\n` +
           `企画: ${workflow.name}\n` +
-          `サーバーID: \`${serverId}\`\n` +
-          `返却日: ${returnDate}` +
-          (comment ? `\nコメント: ${comment}` : ""),
+          `サーバーID: \`${serverId}\``,
       );
     } catch {
       // DM送信失敗は無視
