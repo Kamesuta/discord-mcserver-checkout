@@ -4,7 +4,7 @@ import type {
   TextChannel,
 } from "discord.js";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { userService } from "@/domain/services/UserService";
 import {
   type WorkflowWithUsers,
   workflowService,
@@ -12,7 +12,6 @@ import {
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
-import { prisma } from "@/utils/prisma";
 
 type ActivationInteraction = ButtonInteraction | ModalSubmitInteraction;
 
@@ -59,16 +58,14 @@ export async function activateWorkflow(
   }
 
   // 3. パネルにユーザー追加・権限付与
-  const pteroUsers = await prisma.pterodactylUser.findMany({
-    where: {
-      discordId: { in: workflow.panelUsers.map((u) => u.discordId) },
-    },
-  });
+  const pteroUsers = await userService.findByDiscordIds(
+    workflow.panelUsers.map((u) => u.discordId),
+  );
 
   for (const pteroUser of pteroUsers) {
-    await pterodactylUserService.addUser(
+    await userService.addUserToServer(
       availableServer.pteroId,
-      pteroUser.email,
+      pteroUser.discordId,
     );
   }
 

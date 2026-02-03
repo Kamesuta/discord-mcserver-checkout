@@ -3,9 +3,8 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { userService } from "@/domain/services/UserService";
 import { logger } from "@/utils/log";
-import { prisma } from "@/utils/prisma";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder
@@ -19,9 +18,7 @@ export class McServerResetPasswordCommand extends Command {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     try {
       // 実行者のDiscord IDからPterodactylUserを検索
-      const pteroUser = await prisma.pterodactylUser.findUnique({
-        where: { discordId: interaction.user.id },
-      });
+      const pteroUser = await userService.findByDiscordId(interaction.user.id);
 
       if (!pteroUser) {
         await interaction.editReply(
@@ -30,9 +27,7 @@ export class McServerResetPasswordCommand extends Command {
         return;
       }
 
-      const newPassword = await pterodactylUserService.resetPassword(
-        pteroUser.username,
-      );
+      const newPassword = await userService.resetPassword(interaction.user.id);
       await interaction.editReply(
         `パスワードをリセットしました。\n新しいパスワード: \`${newPassword}\``,
       );

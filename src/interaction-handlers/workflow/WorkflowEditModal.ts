@@ -4,7 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { userService } from "@/domain/services/UserService";
 import type {
   BaseWorkflowParams,
   WorkflowWithUsers,
@@ -112,7 +112,7 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
     // 追加されたユーザーをPterodactylに追加
     if (addedDiscordIds.length > 0) {
       const addedPteroUsers =
-        await pterodactylUserService.findByDiscordIds(addedDiscordIds);
+        await userService.findByDiscordIds(addedDiscordIds);
 
       // 登録されていないユーザーを確認
       const foundDiscordIds = addedPteroUsers.map((u) => u.discordId);
@@ -128,13 +128,13 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
 
       for (const pteroUser of addedPteroUsers) {
         try {
-          await pterodactylUserService.addUser(
+          await userService.addUserToServer(
             workflow.pteroServerId,
-            pteroUser.email,
+            pteroUser.discordId,
           );
         } catch (error) {
           logger.error(
-            `ユーザー ${pteroUser.email} の追加中にエラーが発生しました:`,
+            `ユーザー ${pteroUser.discordId} の追加中にエラーが発生しました:`,
             error,
           );
         }
@@ -144,17 +144,17 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
     // 削除されたユーザーをPterodactylから削除
     if (removedDiscordIds.length > 0) {
       const removedPteroUsers =
-        await pterodactylUserService.findByDiscordIds(removedDiscordIds);
+        await userService.findByDiscordIds(removedDiscordIds);
 
       for (const pteroUser of removedPteroUsers) {
         try {
-          await pterodactylUserService.removeUser(
+          await userService.removeUserFromServer(
             workflow.pteroServerId,
-            pteroUser.email,
+            pteroUser.discordId,
           );
         } catch (error) {
           logger.error(
-            `ユーザー ${pteroUser.email} の削除中にエラーが発生しました:`,
+            `ユーザー ${pteroUser.discordId} の削除中にエラーが発生しました:`,
             error,
           );
         }

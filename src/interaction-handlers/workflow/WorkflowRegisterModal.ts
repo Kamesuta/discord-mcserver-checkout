@@ -5,9 +5,8 @@ import {
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { userService } from "@/domain/services/UserService";
 import { logger } from "@/utils/log";
-import { prisma } from "@/utils/prisma";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
@@ -33,17 +32,8 @@ export class WorkflowRegisterModal extends InteractionHandler {
           .getTextInputValue(`username-${discordId}`)
           .trim();
 
-        // Pterodactylに登録
-        await pterodactylUserService.registerUser(username);
-
-        // DBに保存
-        await prisma.pterodactylUser.create({
-          data: {
-            discordId,
-            username,
-            email: `${username}@kpw.local`,
-          },
-        });
+        // Pterodactylに登録してDBに保存
+        await userService.registerUser(username, discordId);
       }
 
       // 承認処理を続行

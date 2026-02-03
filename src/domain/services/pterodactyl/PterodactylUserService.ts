@@ -1,7 +1,5 @@
 import { PterodactylBaseService } from "@/domain/services/pterodactyl/PterodactylBaseService";
-import type { PterodactylUser as DbPterodactylUser } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
-import { prisma } from "@/utils/prisma";
 
 /**
  * Pterodactyl API のユーザー情報のレスポンス型
@@ -160,15 +158,15 @@ class PterodactylUserService extends PterodactylBaseService {
   /**
    * Pterodactylにユーザーを登録
    * @param username ニックネーム (半角英数)
+   * @param email メールアドレス
    */
-  public async registerUser(username: string): Promise<void> {
+  public async registerUser(username: string, email: string): Promise<void> {
     try {
-      // ニックネームから情報を生成
       await this._requestAppApi<CreateUserResponse>("/users", {
         method: "POST",
         body: JSON.stringify({
           // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-          email: `${username}@kpw.local`,
+          email: email,
           username: username,
           first_name: username,
           last_name: username,
@@ -186,10 +184,10 @@ class PterodactylUserService extends PterodactylBaseService {
 
   /**
    * ユーザーのパスワードをリセット
-   * @param username ニックネーム
+   * @param email メールアドレス
    * @returns 新しいパスワード
    */
-  public async resetPassword(username: string): Promise<string> {
+  public async resetPassword(email: string): Promise<string> {
     try {
       // ユーザーを検索
       // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
@@ -203,15 +201,17 @@ class PterodactylUserService extends PterodactylBaseService {
             last_name: string;
           };
         }[];
-      }>(`/users?filter[username]=${username}`);
+      }>(`/users?filter[email]=${email}`);
       // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
 
       const user = users.data.find(
-        (u) => u.attributes.username.toLowerCase() === username.toLowerCase(),
+        (u) => u.attributes.email.toLowerCase() === email.toLowerCase(),
       );
 
       if (!user) {
-        throw new Error(`ユーザー \`${username}\` が見つかりませんでした。`);
+        throw new Error(
+          `メールアドレス \`${email}\` のユーザーが見つかりませんでした。`,
+        );
       }
 
       // ランダムなパスワードを生成 (12文字)
@@ -234,24 +234,11 @@ class PterodactylUserService extends PterodactylBaseService {
       return newPassword;
     } catch (error) {
       logger.error(
-        `ユーザー ${username} のパスワードリセット中にエラーが発生しました:`,
+        `メールアドレス ${email} のパスワードリセット中にエラーが発生しました:`,
         error,
       );
       throw error;
     }
-  }
-
-  /**
-   * Discord IDのリストからPterodactylユーザー情報を取得
-   * @param discordIds Discord IDのリスト
-   * @returns Pterodactylユーザー情報のリスト
-   */
-  public async findByDiscordIds(
-    discordIds: string[],
-  ): Promise<DbPterodactylUser[]> {
-    return await prisma.pterodactylUser.findMany({
-      where: { discordId: { in: discordIds } },
-    });
   }
 }
 

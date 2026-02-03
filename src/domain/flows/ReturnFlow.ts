@@ -2,12 +2,11 @@ import type { ButtonInteraction, TextChannel } from "discord.js";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
-import { prisma } from "@/utils/prisma";
 
 /**
  * 返却処理の本体：アーカイブ・サーバー再インストール・権限剥奪・通知
@@ -62,13 +61,11 @@ export async function completeReturn(
   await pterodactylCleanService.clean(serverId, workflow.mcVersion ?? "");
 
   // 3. パネルユーザーの権限剥奪
-  const pteroUsers = await prisma.pterodactylUser.findMany({
-    where: {
-      discordId: { in: workflow.panelUsers.map((u) => u.discordId) },
-    },
-  });
+  const pteroUsers = await userService.findByDiscordIds(
+    workflow.panelUsers.map((u) => u.discordId),
+  );
   for (const pteroUser of pteroUsers) {
-    await pterodactylUserService.removeUser(serverId, pteroUser.email);
+    await userService.removeUserFromServer(serverId, pteroUser.discordId);
   }
 
   // 4. ステータスを RETURNED に更新

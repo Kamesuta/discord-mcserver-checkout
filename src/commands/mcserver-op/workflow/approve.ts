@@ -8,11 +8,11 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
+import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
-import { prisma } from "@/utils/prisma";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
@@ -50,9 +50,9 @@ export class WorkflowApproveCommand extends Command {
       // 未登録のパネルユーザーを検索
       const unregistered: string[] = [];
       for (const panelUser of workflow.panelUsers) {
-        const pteroUser = await prisma.pterodactylUser.findUnique({
-          where: { discordId: panelUser.discordId },
-        });
+        const pteroUser = await userService.findByDiscordId(
+          panelUser.discordId,
+        );
         if (!pteroUser) {
           unregistered.push(panelUser.discordId);
         }

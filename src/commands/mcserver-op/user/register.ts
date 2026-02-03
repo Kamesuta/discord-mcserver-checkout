@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { userService } from "@/domain/services/UserService";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "user", (builder) =>
@@ -14,6 +14,12 @@ import { logger } from "@/utils/log";
         .setName("username")
         .setDescription("ニックネーム (半角英数)")
         .setRequired(true),
+    )
+    .addUserOption((option) =>
+      option
+        .setName("user")
+        .setDescription("登録するDiscordユーザー")
+        .setRequired(true),
     ),
 )
 export class UserRegisterCommand extends Command {
@@ -21,13 +27,14 @@ export class UserRegisterCommand extends Command {
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const username = interaction.options.getString("username", true);
+    const user = interaction.options.getUser("user", true);
 
     await interaction.deferReply();
 
     try {
-      await pterodactylUserService.registerUser(username);
+      await userService.registerUser(username, user.id);
       await interaction.editReply(
-        `「${username}」のユーザー登録が完了しました。`,
+        `<@${user.id}>を「${username}」として登録しました。`,
       );
     } catch (error) {
       logger.error(error);
