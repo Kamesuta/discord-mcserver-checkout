@@ -9,6 +9,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService.js";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
 import { prisma } from "@/utils/prisma.js";
@@ -18,7 +19,11 @@ import { prisma } from "@/utils/prisma.js";
     .setName("approve")
     .setDescription("申請を承認する")
     .addIntegerOption((option) =>
-      option.setName("id").setDescription("申請ID").setRequired(true),
+      option
+        .setName("id")
+        .setDescription("申請ID")
+        .setRequired(true)
+        .setAutocomplete(true),
     ),
 )
 export class McServerAdminWorkflowApproveCommand extends Command {
@@ -108,5 +113,11 @@ export class McServerAdminWorkflowApproveCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await workflowAutocomplete(interaction, [WorkflowStatus.PENDING]);
   }
 }

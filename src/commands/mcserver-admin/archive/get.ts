@@ -4,7 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
 import { rcloneService } from "@/domain/services/RcloneService.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
 
@@ -91,32 +91,6 @@ export class McServerAdminArchiveGetCommand extends Command {
   public override async autocompleteRun(
     interaction: Command.AutocompleteInteraction,
   ) {
-    try {
-      const focusedValue = interaction.options.getFocused().toString();
-
-      // データベースからRETURN済みワークフローを取得
-      const returnedWorkflows = await workflowService.findByStatus(
-        WorkflowStatus.RETURNED,
-      );
-
-      // 入力値でフィルタリング（IDまたは企画名で検索）
-      const filtered = returnedWorkflows
-        .filter(
-          (workflow) =>
-            workflow.id.toString().includes(focusedValue) ||
-            workflow.name.toLowerCase().includes(focusedValue.toLowerCase()),
-        )
-        .slice(0, 25); // Discordの制限
-
-      await interaction.respond(
-        filtered.map((workflow) => ({
-          name: `ID: ${workflow.id} - ${workflow.name.length > 70 ? `${workflow.name.substring(0, 67)}...` : workflow.name}`,
-          value: workflow.id,
-        })),
-      );
-    } catch (error) {
-      logger.error("オートコンプリートエラー:", error);
-      await interaction.respond([]);
-    }
+    await workflowAutocomplete(interaction, [WorkflowStatus.RETURNED]);
   }
 }

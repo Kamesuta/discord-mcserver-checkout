@@ -119,6 +119,40 @@ export class WorkflowService {
   }
 
   /**
+   * 複数のステータスから申請を検索する
+   * @param statuses ステータスのリスト
+   * @returns 申請情報のリスト
+   */
+  public async findByStatuses(
+    statuses: WorkflowStatus[],
+  ): Promise<WorkflowWithUsers[]> {
+    return await prisma.workflow.findMany({
+      where: { status: { in: statuses } },
+      include: {
+        panelUsers: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
+  /**
+   * すべての申請を検索する
+   * @returns 申請情報のリスト
+   */
+  public async findAll(): Promise<WorkflowWithUsers[]> {
+    return await prisma.workflow.findMany({
+      include: {
+        panelUsers: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
+  /**
    * 申請のステータスと割り当て情報を更新する
    * @param params 更新パラメータ
    * @returns 更新された申請情報

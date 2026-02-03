@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { workflowService } from "@/domain/services/WorkflowService.js";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { parseDate } from "@/utils/dateParser.js";
 import { logger } from "@/utils/log.js";
@@ -12,7 +13,11 @@ import { logger } from "@/utils/log.js";
     .setName("extend")
     .setDescription("貸出期限を変更する")
     .addIntegerOption((option) =>
-      option.setName("id").setDescription("申請ID").setRequired(true),
+      option
+        .setName("id")
+        .setDescription("申請ID")
+        .setRequired(true)
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -84,5 +89,14 @@ export class McServerAdminCheckoutExtendCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await workflowAutocomplete(interaction, [
+      WorkflowStatus.PENDING,
+      WorkflowStatus.ACTIVE,
+    ]);
   }
 }

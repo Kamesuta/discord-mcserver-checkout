@@ -11,6 +11,7 @@ import {
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService.js";
 import { workflowService } from "@/domain/services/WorkflowService.js";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
 import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
 
@@ -30,7 +31,11 @@ function formatSize(bytes: number): string {
     .setName("return")
     .setDescription("サーバーを返却する")
     .addIntegerOption((option) =>
-      option.setName("id").setDescription("申請ID").setRequired(true),
+      option
+        .setName("id")
+        .setDescription("申請ID")
+        .setRequired(true)
+        .setAutocomplete(true),
     ),
 )
 export class McServerAdminCheckoutReturnCommand extends Command {
@@ -125,5 +130,11 @@ export class McServerAdminCheckoutReturnCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await workflowAutocomplete(interaction, [WorkflowStatus.ACTIVE]);
   }
 }
