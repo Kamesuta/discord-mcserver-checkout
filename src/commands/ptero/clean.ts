@@ -3,6 +3,8 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("ptero", (builder) =>
@@ -10,7 +12,11 @@ import { logger } from "@/utils/log";
     .setName("clean")
     .setDescription("サーバーを初期状態にリセットする")
     .addStringOption((option) =>
-      option.setName("server").setDescription("サーバーID").setRequired(true),
+      option
+        .setName("server")
+        .setDescription("サーバー名")
+        .setRequired(true)
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -23,19 +29,22 @@ export class PteroCleanCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const serverId = interaction.options.getString("server", true);
+    const name = interaction.options.getString("server", true);
     const mcVersion = interaction.options.getString("mc-version", true);
 
     await interaction.deferReply();
 
     try {
+      // サーバー名をPterodactyl IDに変換
+      const pteroId = await serverBindingService.resolve(name);
+
       const dockerImage = await pterodactylCleanService.clean(
-        serverId,
+        pteroId,
         mcVersion,
       );
 
       await interaction.editReply(
-        `サーバー \`${serverId}\` をリセットしました。\n` +
+        `サーバー \`${name}\` をリセットしました。\n` +
           `- 全ファイル削除 ✓\n` +
           `- MC バージョン: \`${mcVersion}\` に設定 ✓\n` +
           `- Docker イメージ: \`${dockerImage}\` ✓\n` +
@@ -47,5 +56,11 @@ export class PteroCleanCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await serverBindingAutocomplete(interaction);
   }
 }

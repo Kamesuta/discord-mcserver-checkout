@@ -3,6 +3,8 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("ptero", (builder) =>
@@ -10,7 +12,11 @@ import { logger } from "@/utils/log";
     .setName("power")
     .setDescription("サーバーの電源操作")
     .addStringOption((option) =>
-      option.setName("server").setDescription("サーバーID").setRequired(true),
+      option
+        .setName("server")
+        .setDescription("サーバー名")
+        .setRequired(true)
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -29,7 +35,7 @@ export class PteroPowerCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const serverId = interaction.options.getString("server", true);
+    const name = interaction.options.getString("server", true);
     const signal = interaction.options.getString("signal", true) as
       | "start"
       | "stop"
@@ -39,7 +45,10 @@ export class PteroPowerCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await pterodactylService.setPowerState(serverId, signal);
+      // サーバー名をPterodactyl IDに変換
+      const pteroId = await serverBindingService.resolve(name);
+
+      await pterodactylService.setPowerState(pteroId, signal);
 
       const signalMessages = {
         start: "起動",
@@ -49,7 +58,7 @@ export class PteroPowerCommand extends Command {
       };
 
       await interaction.editReply(
-        `サーバー \`${serverId}\` に **${signalMessages[signal]}** シグナルを送信しました。`,
+        `サーバー \`${name}\` に **${signalMessages[signal]}** シグナルを送信しました。`,
       );
     } catch (error) {
       logger.error(error);
@@ -57,5 +66,11 @@ export class PteroPowerCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await serverBindingAutocomplete(interaction);
   }
 }

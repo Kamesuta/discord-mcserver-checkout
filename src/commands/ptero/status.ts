@@ -3,6 +3,8 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("ptero", (builder) =>
@@ -10,19 +12,26 @@ import { logger } from "@/utils/log";
     .setName("status")
     .setDescription("サーバーのステータスを取得")
     .addStringOption((option) =>
-      option.setName("server").setDescription("サーバーID").setRequired(true),
+      option
+        .setName("server")
+        .setDescription("サーバー名")
+        .setRequired(true)
+        .setAutocomplete(true),
     ),
 )
 export class PteroStatusCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const serverId = interaction.options.getString("server", true);
+    const name = interaction.options.getString("server", true);
 
     await interaction.deferReply();
 
     try {
-      const status = await pterodactylService.getServerStatus(serverId);
+      // サーバー名をPterodactyl IDに変換
+      const pteroId = await serverBindingService.resolve(name);
+
+      const status = await pterodactylService.getServerStatus(pteroId);
 
       const statusMessages: Record<string, string> = {
         running: "稼働中",
@@ -34,7 +43,7 @@ export class PteroStatusCommand extends Command {
       const statusJa = statusMessages[status] || status;
 
       await interaction.editReply(
-        `サーバー \`${serverId}\` のステータス: **${statusJa}**`,
+        `サーバー \`${name}\` のステータス: **${statusJa}**`,
       );
     } catch (error) {
       logger.error(error);
@@ -42,5 +51,11 @@ export class PteroStatusCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    await serverBindingAutocomplete(interaction);
   }
 }
