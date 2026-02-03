@@ -5,33 +5,29 @@ import {
 import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("ptero", "user", (builder) =>
+@RegisterSubCommandGroup("mcserver-admin", "user", (builder) =>
   builder
-    .setName("add")
-    .setDescription("サーバーにユーザーを追加")
-    .addStringOption((option) =>
-      option.setName("server").setDescription("サーバーID").setRequired(true),
-    )
+    .setName("register")
+    .setDescription("Pterodactylにユーザーを登録")
     .addStringOption((option) =>
       option
-        .setName("email")
-        .setDescription("ユーザーのメールアドレス")
+        .setName("username")
+        .setDescription("ニックネーム (半角英数)")
         .setRequired(true),
     ),
 )
-export class PteroUserAddCommand extends Command {
+export class PteroUserRegisterCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    const serverId = interaction.options.getString("server", true);
-    const email = interaction.options.getString("email", true);
+    const username = interaction.options.getString("username", true);
 
     await interaction.deferReply();
 
     try {
-      await pterodactylUserService.addUser(serverId, email);
+      await pterodactylUserService.registerUser(username);
       await interaction.editReply(
-        `ユーザー \`${email}\` をサーバー \`${serverId}\` に追加しました。`,
+        `「${username}」のユーザー登録が完了しました。`,
       );
     } catch (error) {
       logger.error(error);

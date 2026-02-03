@@ -3,9 +3,6 @@ import { ApplyOptions, RegisterChatInputCommand } from "@sapphire/decorators";
 
 @RegisterChatInputCommand<Subcommand>((builder, command) => {
   // サブコマンドグループ (hooksの前に設定する必要あり)
-  builder.addSubcommandGroup((group) =>
-    group.setName("user").setDescription("ユーザー管理"),
-  );
 
   // コマンドの登録
   command.hooks.groups(command, builder);

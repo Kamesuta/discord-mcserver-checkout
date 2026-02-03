@@ -16,6 +16,9 @@ import { DispatchAutocomplete } from "@/decorators/DispatchAutocomplete";
   builder.addSubcommandGroup((group) =>
     group.setName("archive").setDescription("アーカイブ管理"),
   );
+  builder.addSubcommandGroup((group) =>
+    group.setName("user").setDescription("ユーザー管理"),
+  );
 
   // コマンドの登録
   command.hooks.groups(command, builder);

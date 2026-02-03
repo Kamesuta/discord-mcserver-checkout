@@ -1,5 +1,7 @@
 import { PterodactylBaseService } from "@/domain/services/pterodactyl/PterodactylBaseService";
+import type { PterodactylUser as DbPterodactylUser } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
+import { prisma } from "@/utils/prisma";
 
 /**
  * Pterodactyl API のユーザー情報のレスポンス型
@@ -237,6 +239,19 @@ class PterodactylUserService extends PterodactylBaseService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Discord IDのリストからPterodactylユーザー情報を取得
+   * @param discordIds Discord IDのリスト
+   * @returns Pterodactylユーザー情報のリスト
+   */
+  public async findByDiscordIds(
+    discordIds: string[],
+  ): Promise<DbPterodactylUser[]> {
+    return await prisma.pterodactylUser.findMany({
+      where: { discordId: { in: discordIds } },
+    });
   }
 }
 
