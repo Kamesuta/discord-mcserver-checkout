@@ -8,13 +8,17 @@ import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
 
 /**
- * 返却処理の本体：アーカイブ・サーバー再インストール・権限剥奪・通知
+ * 返却処理の本体：アーカイブ・サーバーリセット・通知
  * @param interaction ボタンのインタラクション（deferReply済み）
  * @param workflowId ワークフロー ID
+ * @param skipReset サーバーリセット（全ファイル削除）をスキップする場合は true
+ * @param skipArchive アーカイブ処理をスキップする場合は true
  */
 export async function completeReturn(
   interaction: ButtonInteraction,
   workflowId: number,
+  skipReset: boolean = false,
+  skipArchive: boolean = false,
 ): Promise<void> {
   const workflow = await workflowService.findById(workflowId);
   if (!workflow || !workflow.pteroServerId) {
@@ -53,11 +57,15 @@ export async function completeReturn(
     mcVersion: workflow.mcVersion ?? undefined,
   });
 
-  // 1. バックアップアーカイブ（一時バックアップ作成 + ロック済み + rclone アップロード + ロック解除）
-  await archiveService.archiveBackup(serverId, archiveName, "★");
+  // 1. バックアップアーカイブ（skipArchive=false の場合のみ）
+  if (!skipArchive) {
+    await archiveService.archiveBackup(serverId, archiveName, "★");
+  }
 
-  // 2. サーバー再インストール（初期化）
-  await pterodactylCleanService.clean(serverId, workflow.mcVersion ?? "");
+  // 2. サーバーリセット（全ファイル削除・reinstallなし）（skipReset=false の場合のみ）
+  if (!skipReset) {
+    await pterodactylCleanService.reset(serverId);
+  }
 
   // 3. ステータスを RETURNED に更新
   await workflowService.updateStatus({
@@ -76,7 +84,9 @@ export async function completeReturn(
           `**サーバー貸出が返却されました。**\n\n` +
           `申請ID: ${workflow.id}\n` +
           `企画: ${workflow.name}\n` +
-          `サーバーID: \`${serverName ?? serverId}\``,
+          `サーバー: \`${serverName ?? serverId}\`` +
+          (skipArchive ? "\n⚠️ アーカイブは実行されていません" : "") +
+          (skipReset ? "\n⚠️ サーバーリセットは実行されていません" : ""),
       );
     }
   } catch (error) {
@@ -84,7 +94,15 @@ export async function completeReturn(
     console.error("Failed to send return notification:", error);
   }
 
+  const statusParts = [
+    !skipArchive && "アーカイブ済み",
+    !skipReset && "リセット済み",
+  ].filter(Boolean);
+
   await interaction.editReply(
-    `返却完了！サーバー \`${serverName ?? serverId}\` は初期化されました。`,
+    `返却完了！サーバー \`${serverName ?? serverId}\`\n` +
+      (statusParts.length > 0
+        ? statusParts.join("・")
+        : "アーカイブ・リセットはスキップされました"),
   );
 }

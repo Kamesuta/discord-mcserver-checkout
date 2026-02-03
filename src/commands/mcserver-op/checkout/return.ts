@@ -36,6 +36,18 @@ function formatSize(bytes: number): string {
         .setDescription("申請ID")
         .setRequired(true)
         .setAutocomplete(true),
+    )
+    .addBooleanOption((option) =>
+      option
+        .setName("skip-reset")
+        .setDescription("サーバーリセット（全ファイル削除）をスキップする")
+        .setRequired(false),
+    )
+    .addBooleanOption((option) =>
+      option
+        .setName("skip-archive")
+        .setDescription("アーカイブ処理をスキップする")
+        .setRequired(false),
     ),
 )
 export class CheckoutReturnCommand extends Command {
@@ -43,6 +55,8 @@ export class CheckoutReturnCommand extends Command {
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const id = interaction.options.getInteger("id", true);
+    const skipReset = interaction.options.getBoolean("skip-reset") ?? false;
+    const skipArchive = interaction.options.getBoolean("skip-archive") ?? false;
     await interaction.deferReply();
 
     try {
@@ -116,7 +130,11 @@ export class CheckoutReturnCommand extends Command {
       });
 
       // 確認ボタン
-      const params = new URLSearchParams({ workflowId: String(workflow.id) });
+      const params = new URLSearchParams({
+        workflowId: String(workflow.id),
+        skipReset: skipReset.toString(),
+        skipArchive: skipArchive.toString(),
+      });
       const button = new ButtonBuilder()
         .setCustomId(`return-confirm?${params.toString()}`)
         .setLabel("返却を実行")

@@ -56,9 +56,9 @@ export async function activateWorkflow(
     return null;
   }
 
-  // 3. サーバーをクリーン（skipReset=false の場合のみ）
+  // 3. サーバーを再インストール（skipReset=false の場合のみ）
   if (!skipReset) {
-    await pterodactylCleanService.clean(
+    await pterodactylCleanService.reinstall(
       availableServer.pteroId,
       workflow.mcVersion ?? "",
     );

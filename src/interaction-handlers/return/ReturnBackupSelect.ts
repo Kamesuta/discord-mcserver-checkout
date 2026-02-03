@@ -20,11 +20,13 @@ export class ReturnConfirmButton extends InteractionHandler {
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
     const workflowId = Number(params.get("workflowId"));
+    const skipReset = params.get("skipReset") === "true";
+    const skipArchive = params.get("skipArchive") === "true";
 
     await interaction.deferReply();
 
     try {
-      await completeReturn(interaction, workflowId);
+      await completeReturn(interaction, workflowId, skipReset, skipArchive);
     } catch (error) {
       logger.error("返却処理中にエラーが発生しました:", error);
       const message =

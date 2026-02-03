@@ -38,7 +38,7 @@ export class ServerCleanCommand extends Command {
       // サーバー名をPterodactyl IDに変換
       const pteroId = await serverBindingService.resolve(name);
 
-      const dockerImage = await pterodactylCleanService.clean(
+      const dockerImage = await pterodactylCleanService.reinstall(
         pteroId,
         mcVersion,
       );

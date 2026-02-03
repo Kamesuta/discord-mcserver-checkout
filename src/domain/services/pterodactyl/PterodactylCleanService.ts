@@ -44,16 +44,38 @@ class PterodactylCleanService extends PterodactylBaseService {
   private static readonly _REINSTALL_POLL_TIMEOUT = 300000;
 
   /**
-   * サーバーを初期状態にリセットする
-   * サーバー停止・全ファイル削除・バージョン設定・再インストールを順次実行する
+   * サーバーを停止・全ファイル削除のみに行う（再インストールなし）
+   * 返却時のリセットに使用
+   * @param serverId サーバーID
+   */
+  public async reset(serverId: string): Promise<void> {
+    const stopResult = await pterodactylService.setPowerState(serverId, "stop");
+    await stopResult.wait();
+
+    await this._deleteAllFiles(serverId);
+  }
+
+  /**
+   * サーバーを停止・全ファイル削除・バージョン設定・再インストールを順次実行する
+   * reinstall 前にディレクトリが空であることを確認する
+   * 貸出時の初期化に使用
    * @param serverId サーバーID
    * @param mcVersion リセットするMCバージョン
-   * @returns 設定されたDocker イメージ名
+   * @throws ディレクトリが空でない場合にエラー
    */
-  public async clean(serverId: string, mcVersion: string): Promise<string> {
+  public async reinstall(serverId: string, mcVersion: string): Promise<void> {
+    // ディレクトリが空であることを確認（Egg が server.properties だけ自動生成するため無視）
+    const files = await this._getRootFiles(serverId);
+    const unexpected = files.filter((name) => name !== "server.properties");
+    if (unexpected.length > 0) {
+      throw new Error(
+        `サーバーディレクトリが空ではありません: ${unexpected.join(", ")}`,
+      );
+    }
+
     // サーバーを停止
     const stopResult = await pterodactylService.setPowerState(serverId, "stop");
-    await stopResult.wait(); // 停止完了まで待機
+    await stopResult.wait();
 
     // 全ファイルを削除
     await this._deleteAllFiles(serverId);
@@ -69,23 +91,28 @@ class PterodactylCleanService extends PterodactylBaseService {
 
     // サーバーを再インストール
     const reinstallResult = await this._reinstallServer(serverId);
-    await reinstallResult.wait(); // 再インストール完了まで待機
-
-    return dockerImage;
+    await reinstallResult.wait();
   }
 
   /**
-   * サーバーのファイルを削除
+   * ルートディレクトリのファイル名一覧を取得する
+   * @param serverId サーバーID
+   * @returns ファイル名のリスト
+   */
+  private async _getRootFiles(serverId: string): Promise<string[]> {
+    const data = await this._requestClientApi<ListFilesResponse>(
+      `/servers/${serverId}/files/list`,
+    );
+    return data.data.map((file) => file.attributes.name);
+  }
+
+  /**
+   * サーバーのルートディレクトリ直下の全ファイルを削除する
    * @param serverId サーバーID
    */
   private async _deleteAllFiles(serverId: string): Promise<void> {
     try {
-      // サーバーのルートディレクトリ内のファイル一覧を取得
-      const data = await this._requestClientApi<ListFilesResponse>(
-        `/servers/${serverId}/files/list`,
-      );
-      const files = data.data.map((file) => file.attributes.name);
-
+      const files = await this._getRootFiles(serverId);
       // ファイルが空の場合は何もしない
       if (files.length === 0) return;
 
