@@ -1,17 +1,21 @@
 import {
   Command,
-  RegisterSubCommand,
+  RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommand("mcserver-admin", (builder) =>
+@RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
   builder
-    .setName("status")
+    .setName("server-status")
     .setDescription("サーバーのステータスを取得")
     .addStringOption((option) =>
-      option.setName("server").setDescription("サーバー名").setRequired(true),
+      option
+        .setName("server")
+        .setDescription("サーバー名")
+        .setRequired(true)
+        .setAutocomplete(true),
     ),
 )
 export class McServerAdminStatusCommand extends Command {
@@ -47,5 +51,29 @@ export class McServerAdminStatusCommand extends Command {
         error instanceof Error ? error.message : "不明なエラーが発生しました";
       await interaction.editReply(`エラーが発生しました: ${message}`);
     }
+  }
+
+  public override async autocompleteRun(
+    interaction: Command.AutocompleteInteraction,
+  ) {
+    const focusedValue = interaction.options.getFocused();
+
+    // サーバー一覧を取得
+    const servers = await serverBindingService.list();
+
+    // 入力値でフィルタリング
+    const filtered = servers
+      .filter((server) =>
+        server.name.toLowerCase().includes(focusedValue.toLowerCase()),
+      )
+      .slice(0, 25); // Discord APIの制限
+
+    // オートコンプリート候補を返す
+    await interaction.respond(
+      filtered.map((server) => ({
+        name: server.name,
+        value: server.name,
+      })),
+    );
   }
 }
