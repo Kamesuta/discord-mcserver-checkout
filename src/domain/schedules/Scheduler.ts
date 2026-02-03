@@ -1,6 +1,6 @@
 import type { SapphireClient } from "@sapphire/framework";
 import schedule from "node-schedule";
-import { sapphireLogger } from "../utils/log.js";
+import { sapphireLogger } from "../../utils/log.js";
 
 /** スケジュールされたタスクのインターフェース */
 export interface ScheduledTask {

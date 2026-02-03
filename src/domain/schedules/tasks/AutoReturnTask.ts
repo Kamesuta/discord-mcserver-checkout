@@ -6,11 +6,11 @@ import {
   EmbedBuilder,
   type TextChannel,
 } from "discord.js";
-import { serverBindingService } from "../../domain/services/ServerBindingService.js";
-import { workflowService } from "../../domain/services/WorkflowService.js";
-import { WorkflowStatus } from "../../generated/prisma/client.js";
-import env from "../../utils/env.js";
-import { sapphireLogger } from "../../utils/log.js";
+import { WorkflowStatus } from "../../../generated/prisma/client.js";
+import env from "../../../utils/env.js";
+import { sapphireLogger } from "../../../utils/log.js";
+import { serverBindingService } from "../../services/ServerBindingService.js";
+import { workflowService } from "../../services/WorkflowService.js";
 import type { ScheduledTask } from "../Scheduler.js";
 
 /**

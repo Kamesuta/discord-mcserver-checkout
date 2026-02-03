@@ -9,9 +9,9 @@ import env from "./utils/env.js";
 import { sapphireLogger } from "./utils/log.js";
 import { srcDir } from "./utils/workdir.js";
 import "@kaname-png/plugin-subcommands-advanced/register";
-import { Scheduler } from "./services/Scheduler.js";
-import { AutoReturnTask } from "./services/tasks/AutoReturnTask.js";
-import { ReminderTask } from "./services/tasks/ReminderTask.js";
+import { Scheduler } from "./domain/schedules/Scheduler.js";
+import { AutoReturnTask } from "./domain/schedules/tasks/AutoReturnTask.js";
+import { ReminderTask } from "./domain/schedules/tasks/ReminderTask.js";
 
 // このBOTはGUILD_IDのサーバーのみで動作する (他鯖で動作させない)
 ApplicationCommandRegistries.setDefaultGuildIds([env.GUILD_ID]);
