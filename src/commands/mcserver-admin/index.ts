@@ -1,11 +1,6 @@
-import {
-  type Command,
-  Subcommand,
-  subCommandsGroupRegistry,
-  subCommandsRegistry,
-} from "@kaname-png/plugin-subcommands-advanced";
+import { Subcommand } from "@kaname-png/plugin-subcommands-advanced";
 import { ApplyOptions, RegisterChatInputCommand } from "@sapphire/decorators";
-import type { AutocompleteInteraction } from "discord.js";
+import { DispatchAutocomplete } from "@/decorators/DispatchAutocomplete.js";
 
 @RegisterChatInputCommand<Subcommand>((builder, command) => {
   // サブコマンドグループ (hooksの前に設定する必要あり)
@@ -32,28 +27,5 @@ import type { AutocompleteInteraction } from "discord.js";
 @ApplyOptions<Subcommand.Options>({
   name: "mcserver-admin",
 })
-export class McServerAdminCommand extends Subcommand {
-  public override async autocompleteRun(interaction: AutocompleteInteraction) {
-    const groupName = interaction.options.getSubcommandGroup(false);
-    const subcommandName = interaction.options.getSubcommand(true);
-
-    let subcommandPiece: Command | undefined;
-
-    if (groupName) {
-      // グループサブコマンドの場合
-      const groups = subCommandsGroupRegistry.get(this.name);
-      const group = groups?.get(groupName);
-      const mapping = group?.get(subcommandName);
-      subcommandPiece = mapping?.commandPiece;
-    } else {
-      // 直接のサブコマンドの場合
-      const subcommands = subCommandsRegistry.get(this.name);
-      const mapping = subcommands?.get(subcommandName);
-      subcommandPiece = mapping?.commandPiece;
-    }
-
-    if (subcommandPiece?.autocompleteRun) {
-      return subcommandPiece.autocompleteRun(interaction);
-    }
-  }
-}
+@DispatchAutocomplete
+export class McServerAdminCommand extends Subcommand {}
