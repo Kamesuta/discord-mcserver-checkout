@@ -32,6 +32,7 @@
     "@prisma/adapter-mariadb": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@sapphire/decorators": "^6.2.0",
+    "@sapphire/discord.js-utilities": "^7.3.3",
     "@sapphire/framework": "^5.5.0",
     "@sapphire/plugin-subcommands": "^7.0.1",
     "discord.js": "^14.18.0",

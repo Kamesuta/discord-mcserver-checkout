@@ -26,6 +26,44 @@ class RcloneService {
       throw error;
     }
   }
+
+  /**
+   * アーカイブフォルダ一覧を取得する
+   * @returns フォルダ名の配列
+   */
+  public async listFolders(): Promise<string[]> {
+    try {
+      const { stdout } = await execFileAsync("rclone", [
+        "lsf",
+        "--dirs-only",
+        env.RCLONE_BASE_PATH,
+      ]);
+      return stdout
+        .trim()
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => line.replace(/\/$/, "")); // 末尾のスラッシュを削除
+    } catch (error) {
+      logger.error(`rclone フォルダ一覧取得失敗:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 指定されたパスの共有リンクを取得する
+   * @param remotePath RCLONE_BASE_PATH 配下のサブパス
+   * @returns 共有リンクURL
+   */
+  public async getShareLink(remotePath: string): Promise<string> {
+    const destination = `${env.RCLONE_BASE_PATH}/${remotePath}`;
+    try {
+      const { stdout } = await execFileAsync("rclone", ["link", destination]);
+      return stdout.trim();
+    } catch (error) {
+      logger.error(`rclone 共有リンク取得失敗 (${destination}):`, error);
+      throw error;
+    }
+  }
 }
 
 /** RcloneService のシングルトンインスタンス */

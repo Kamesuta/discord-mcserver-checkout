@@ -12,6 +12,9 @@ import { ApplyOptions, RegisterChatInputCommand } from "@sapphire/decorators";
   builder.addSubcommandGroup((group) =>
     group.setName("checkout").setDescription("貸出管理"),
   );
+  builder.addSubcommandGroup((group) =>
+    group.setName("archive").setDescription("アーカイブ管理"),
+  );
 
   // コマンドの登録
   command.hooks.groups(command, builder);
