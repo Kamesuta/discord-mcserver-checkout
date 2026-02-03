@@ -8,7 +8,7 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js";
 import semver from "semver";
-import type { BaseWorkflowParams } from "../../domain/services/WorkflowService.js";
+import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 
 /** モーダルフィールドのデフォルト値 */
 export interface CheckoutModalDefaults {

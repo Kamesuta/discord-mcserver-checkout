@@ -2,9 +2,9 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService.js";
-import { serverBindingService } from "@/domain/services/ServerBindingService.js";
-import { logger } from "@/utils/log.js";
+import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver-admin", (builder) =>
   builder

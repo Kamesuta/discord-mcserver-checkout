@@ -3,12 +3,12 @@ import type {
   ModalSubmitInteraction,
   TextChannel,
 } from "discord.js";
-import { WorkflowStatus } from "../../generated/prisma/client.js";
-import env from "../../utils/env.js";
-import { prisma } from "../../utils/prisma.js";
-import { pterodactylCleanService } from "../services/pterodactyl/PterodactylCleanService.js";
-import { pterodactylUserService } from "../services/pterodactyl/PterodactylUserService.js";
-import { workflowService } from "../services/WorkflowService.js";
+import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import env from "@/utils/env";
+import { prisma } from "@/utils/prisma";
 
 type ApprovalInteraction = ButtonInteraction | ModalSubmitInteraction;
 

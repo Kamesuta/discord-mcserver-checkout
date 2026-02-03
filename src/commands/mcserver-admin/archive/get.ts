@@ -3,10 +3,10 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
-import { rcloneService } from "@/domain/services/RcloneService.js";
-import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { rcloneService } from "@/domain/services/RcloneService";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "archive", (builder) =>
   builder

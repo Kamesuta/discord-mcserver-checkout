@@ -1,10 +1,10 @@
 import semver from "semver";
-import { logger } from "../../../utils/log.js";
+import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { logger } from "@/utils/log";
 import {
   type PendingOperation,
   PterodactylBaseService,
 } from "./PterodactylBaseService.js";
-import { pterodactylService } from "./PterodactylService.js";
 
 /**
  * Pterodactyl API のファイル一覧レスポンス型

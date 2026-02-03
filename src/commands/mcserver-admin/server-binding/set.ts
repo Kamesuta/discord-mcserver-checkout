@@ -2,8 +2,8 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { serverBindingService } from "@/domain/services/ServerBindingService.js";
-import { logger } from "@/utils/log.js";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "server-binding", (builder) =>
   builder

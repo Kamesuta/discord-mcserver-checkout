@@ -1,4 +1,4 @@
-import { logger } from "../../../utils/log.js";
+import { logger } from "@/utils/log";
 import {
   type PendingOperation,
   PterodactylBaseService,

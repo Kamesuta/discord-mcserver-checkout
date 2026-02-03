@@ -1,7 +1,7 @@
 import type { AutocompleteInteraction } from "discord.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import type { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import type { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 /**
  * ワークフローのオートコンプリートを実装する共通ヘルパー関数

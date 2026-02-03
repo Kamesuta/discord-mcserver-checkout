@@ -8,11 +8,11 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
-import { prisma } from "@/utils/prisma.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
+import { prisma } from "@/utils/prisma";
 
 @RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
   builder

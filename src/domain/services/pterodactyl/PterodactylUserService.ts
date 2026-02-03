@@ -1,5 +1,5 @@
-import { logger } from "../../../utils/log.js";
-import { PterodactylBaseService } from "./PterodactylBaseService.js";
+import { PterodactylBaseService } from "@/domain/services/pterodactyl/PterodactylBaseService";
+import { logger } from "@/utils/log";
 
 /**
  * Pterodactyl API のユーザー情報のレスポンス型

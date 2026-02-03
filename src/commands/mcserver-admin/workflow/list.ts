@@ -3,9 +3,9 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
   builder.setName("list").setDescription("承認待ち申請一覧を表示"),

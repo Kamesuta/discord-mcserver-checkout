@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal.js";
+import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder

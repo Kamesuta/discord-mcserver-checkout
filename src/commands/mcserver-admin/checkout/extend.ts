@@ -2,11 +2,11 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { parseDate } from "@/utils/dateParser.js";
-import { logger } from "@/utils/log.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { parseDate } from "@/utils/dateParser";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
   builder

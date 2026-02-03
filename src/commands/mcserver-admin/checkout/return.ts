@@ -8,12 +8,12 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
-import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService.js";
-import { serverBindingService } from "@/domain/services/ServerBindingService.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 /**
  * バイトサイズを人間が読みやすい形式に変換する

@@ -4,9 +4,9 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ButtonInteraction } from "discord.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.Button,

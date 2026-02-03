@@ -2,9 +2,9 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { ArchiveName } from "@/domain/services/ArchiveName.js";
-import { archiveService } from "@/domain/services/ArchiveService.js";
-import { logger } from "@/utils/log.js";
+import { ArchiveName } from "@/domain/services/ArchiveName";
+import { archiveService } from "@/domain/services/ArchiveService";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommand("ptero", (builder) =>
   builder

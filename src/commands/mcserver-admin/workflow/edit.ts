@@ -3,10 +3,10 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal.js";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
 
 @RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
   builder

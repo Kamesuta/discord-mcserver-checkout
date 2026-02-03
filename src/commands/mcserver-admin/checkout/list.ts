@@ -3,10 +3,10 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
-import { serverBindingService } from "@/domain/services/ServerBindingService.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
   builder.setName("list").setDescription("貸出中サーバー一覧を表示"),

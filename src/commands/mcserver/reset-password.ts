@@ -3,9 +3,9 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
-import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService.js";
-import { logger } from "@/utils/log.js";
-import { prisma } from "@/utils/prisma.js";
+import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { logger } from "@/utils/log";
+import { prisma } from "@/utils/prisma";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder

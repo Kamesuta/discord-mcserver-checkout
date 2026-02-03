@@ -1,10 +1,10 @@
 import { unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { logger } from "@/utils/log.js";
-import type { ArchiveName } from "./ArchiveName.js";
-import { pterodactylBackupService } from "./pterodactyl/PterodactylBackupService.js";
-import { rcloneService } from "./RcloneService.js";
+import type { ArchiveName } from "@/domain/services/ArchiveName";
+import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
+import { rcloneService } from "@/domain/services/RcloneService";
+import { logger } from "@/utils/log";
 
 /**
  * アーカイブ対象のバックアップ

@@ -3,8 +3,8 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { PaginatedMessageEmbedFields } from "@sapphire/discord.js-utilities";
-import { rcloneService } from "@/domain/services/RcloneService.js";
-import { logger } from "@/utils/log.js";
+import { rcloneService } from "@/domain/services/RcloneService";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "archive", (builder) =>
   builder.setName("list").setDescription("アーカイブ済み企画の一覧を表示"),

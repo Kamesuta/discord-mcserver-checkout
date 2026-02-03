@@ -4,8 +4,8 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ButtonInteraction } from "discord.js";
-import { completeReturn } from "@/domain/flows/ReturnFlow.js";
-import { logger } from "@/utils/log.js";
+import { completeReturn } from "@/domain/flows/ReturnFlow";
+import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.Button,

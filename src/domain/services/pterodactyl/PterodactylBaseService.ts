@@ -1,5 +1,5 @@
-import env from "../../../utils/env.js";
-import { logger } from "../../../utils/log.js";
+import env from "@/utils/env";
+import { logger } from "@/utils/log";
 
 /**
  * Pterodactyl API のエラーレスポンス構造

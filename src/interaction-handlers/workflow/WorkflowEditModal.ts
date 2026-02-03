@@ -4,10 +4,10 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
-import type { BaseWorkflowParams } from "../../domain/services/WorkflowService.js";
-import { workflowService } from "../../domain/services/WorkflowService.js";
-import { logger } from "../../utils/log.js";
-import { BaseCheckoutModalHandler } from "./WorkflowBaseModal.js";
+import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.ModalSubmit,

@@ -1,6 +1,6 @@
 import { type ILogger, LogLevel } from "@sapphire/framework";
 import log4js from "log4js";
-import { getWorkdirPath } from "./workdir.js";
+import { getWorkdirPath } from "@/utils/workdir";
 
 // ロガーを初期化
 log4js.configure({

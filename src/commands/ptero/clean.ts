@@ -2,8 +2,8 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService.js";
-import { logger } from "@/utils/log.js";
+import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommand("ptero", (builder) =>
   builder

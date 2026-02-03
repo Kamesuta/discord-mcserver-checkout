@@ -1,13 +1,13 @@
 import type { ButtonInteraction, TextChannel } from "discord.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import env from "@/utils/env.js";
-import { prisma } from "@/utils/prisma.js";
-import { ArchiveName } from "../services/ArchiveName.js";
-import { archiveService } from "../services/ArchiveService.js";
-import { pterodactylCleanService } from "../services/pterodactyl/PterodactylCleanService.js";
-import { pterodactylUserService } from "../services/pterodactyl/PterodactylUserService.js";
-import { serverBindingService } from "../services/ServerBindingService.js";
-import { workflowService } from "../services/WorkflowService.js";
+import { ArchiveName } from "@/domain/services/ArchiveName";
+import { archiveService } from "@/domain/services/ArchiveService";
+import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import env from "@/utils/env";
+import { prisma } from "@/utils/prisma";
 
 /**
  * 返却処理の本体：アーカイブ・サーバー再インストール・権限剥奪・通知

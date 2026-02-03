@@ -5,13 +5,13 @@ import {
   SapphireClient,
 } from "@sapphire/framework";
 import { GatewayIntentBits } from "discord.js";
-import env from "./utils/env.js";
-import { sapphireLogger } from "./utils/log.js";
-import { srcDir } from "./utils/workdir.js";
+import env from "@/utils/env";
+import { sapphireLogger } from "@/utils/log";
+import { srcDir } from "@/utils/workdir";
 import "@kaname-png/plugin-subcommands-advanced/register";
-import { Scheduler } from "./domain/schedules/Scheduler.js";
-import { AutoReturnTask } from "./domain/schedules/tasks/AutoReturnTask.js";
-import { ReminderTask } from "./domain/schedules/tasks/ReminderTask.js";
+import { Scheduler } from "@/domain/schedules/Scheduler";
+import { AutoReturnTask } from "@/domain/schedules/tasks/AutoReturnTask";
+import { ReminderTask } from "@/domain/schedules/tasks/ReminderTask";
 
 // このBOTはGUILD_IDのサーバーのみで動作する (他鯖で動作させない)
 ApplicationCommandRegistries.setDefaultGuildIds([env.GUILD_ID]);

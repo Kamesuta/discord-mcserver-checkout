@@ -2,10 +2,10 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { serverBindingService } from "@/domain/services/ServerBindingService.js";
-import { workflowService } from "@/domain/services/WorkflowService.js";
-import { WorkflowStatus } from "@/generated/prisma/client.js";
-import { logger } from "@/utils/log.js";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowStatus } from "@/generated/prisma/client";
+import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder.setName("extend").setDescription("サーバー貸出期限を1週間延長する"),
