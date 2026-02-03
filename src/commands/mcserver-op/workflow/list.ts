@@ -7,7 +7,7 @@ import { workflowService } from "@/domain/services/WorkflowService";
 import type { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
     .setName("list")
     .setDescription("申請一覧を表示")
@@ -25,7 +25,7 @@ import { logger } from "@/utils/log";
         .setRequired(false),
     ),
 )
-export class McServerAdminWorkflowListCommand extends Command {
+export class WorkflowListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

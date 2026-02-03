@@ -26,7 +26,7 @@ function formatSize(bytes: number): string {
   return `${Math.round(kb)} KB`;
 }
 
-@RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
   builder
     .setName("return")
     .setDescription("サーバーを返却する")
@@ -38,7 +38,7 @@ function formatSize(bytes: number): string {
         .setAutocomplete(true),
     ),
 )
-export class McServerAdminCheckoutReturnCommand extends Command {
+export class CheckoutReturnCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

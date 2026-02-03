@@ -22,7 +22,7 @@ import { logger } from "@/utils/log";
         .setRequired(true),
     ),
 )
-export class McServerAdminServerBindingSetCommand extends Command {
+export class ServerBindingSetCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

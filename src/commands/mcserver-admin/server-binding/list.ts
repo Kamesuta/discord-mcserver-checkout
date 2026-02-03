@@ -9,7 +9,7 @@ import { logger } from "@/utils/log";
 @RegisterSubCommandGroup("mcserver-admin", "server-binding", (builder) =>
   builder.setName("list").setDescription("サーバーバインディング一覧を表示"),
 )
-export class McServerAdminServerBindingListCommand extends Command {
+export class ServerBindingListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

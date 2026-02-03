@@ -16,7 +16,7 @@ import { logger } from "@/utils/log";
         .setRequired(true),
     ),
 )
-export class McServerAdminServerBindingUnsetCommand extends Command {
+export class ServerBindingUnsetCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

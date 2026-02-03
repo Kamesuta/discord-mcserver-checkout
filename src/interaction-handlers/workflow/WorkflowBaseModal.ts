@@ -25,7 +25,7 @@ export interface CheckoutModalDefaults {
 }
 
 /**
- * /mcserver checkout と /mcserver-admin workflow edit で共有される
+ * /mcserver checkout と /mcserver-op workflow edit で共有される
  * モーダルハンドラーの基底クラス。
  *
  * フィールド抽出・バリデーションを共通化し、
@@ -34,7 +34,7 @@ export interface CheckoutModalDefaults {
 export abstract class BaseCheckoutModalHandler extends InteractionHandler {
   /**
    * サーバー貸出申請モーダルを生成する。
-   * /mcserver checkout と /mcserver-admin workflow edit で共有される。
+   * /mcserver checkout と /mcserver-op workflow edit で共有される。
    * @param customId モーダルの customId
    * @param title モーダルのタイトル
    * @param defaults デフォルト値（省略時は空）

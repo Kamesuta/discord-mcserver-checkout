@@ -8,7 +8,7 @@ import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
 
-@RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
     .setName("edit")
     .setDescription("PENDING/ACTIVE の申請を編集")
@@ -20,7 +20,7 @@ import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/Workfl
         .setAutocomplete(true),
     ),
 )
-export class McServerAdminWorkflowEditCommand extends Command {
+export class WorkflowEditCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

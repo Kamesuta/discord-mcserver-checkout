@@ -8,7 +8,7 @@ import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-admin", "archive", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "archive", (builder) =>
   builder
     .setName("get")
     .setDescription("アーカイブフォルダの共有リンクを取得")
@@ -20,7 +20,7 @@ import { logger } from "@/utils/log";
         .setAutocomplete(true),
     ),
 )
-export class McServerAdminArchiveGetCommand extends Command {
+export class ArchiveGetCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

@@ -122,7 +122,7 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
 
       if (unregisteredDiscordIds.length > 0) {
         warnings.push(
-          `以下のユーザーは Pterodactyl に登録されていません。\`/mcserver-admin user register\` で登録してください: ${unregisteredDiscordIds.map((id) => `<@${id}>`).join(", ")}`,
+          `以下のユーザーは Pterodactyl に登録されていません。\`/mcserver-op user register\` で登録してください: ${unregisteredDiscordIds.map((id) => `<@${id}>`).join(", ")}`,
         );
       }
 

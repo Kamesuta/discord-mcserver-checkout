@@ -1,16 +1,16 @@
 import {
   Command,
-  RegisterSubCommand,
+  RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommand("ptero", (builder) =>
+@RegisterSubCommandGroup("mcserver-admin", "server", (builder) =>
   builder
-    .setName("power")
-    .setDescription("サーバーの電源操作")
+    .setName("clean")
+    .setDescription("サーバーを初期状態にリセットする")
     .addStringOption((option) =>
       option
         .setName("server")
@@ -20,27 +20,17 @@ import { logger } from "@/utils/log";
     )
     .addStringOption((option) =>
       option
-        .setName("signal")
-        .setDescription("電源操作シグナル")
-        .setRequired(true)
-        .addChoices(
-          { name: "起動", value: "start" },
-          { name: "停止", value: "stop" },
-          { name: "再起動", value: "restart" },
-          { name: "強制終了", value: "kill" },
-        ),
+        .setName("mc-version")
+        .setDescription("リセットするMCバージョン")
+        .setRequired(true),
     ),
 )
-export class PteroPowerCommand extends Command {
+export class ServerCleanCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const name = interaction.options.getString("server", true);
-    const signal = interaction.options.getString("signal", true) as
-      | "start"
-      | "stop"
-      | "restart"
-      | "kill";
+    const mcVersion = interaction.options.getString("mc-version", true);
 
     await interaction.deferReply();
 
@@ -48,17 +38,17 @@ export class PteroPowerCommand extends Command {
       // サーバー名をPterodactyl IDに変換
       const pteroId = await serverBindingService.resolve(name);
 
-      await pterodactylService.setPowerState(pteroId, signal);
-
-      const signalMessages = {
-        start: "起動",
-        stop: "停止",
-        restart: "再起動",
-        kill: "強制終了",
-      };
+      const dockerImage = await pterodactylCleanService.clean(
+        pteroId,
+        mcVersion,
+      );
 
       await interaction.editReply(
-        `サーバー \`${name}\` に **${signalMessages[signal]}** シグナルを送信しました。`,
+        `サーバー \`${name}\` をリセットしました。\n` +
+          `- 全ファイル削除 ✓\n` +
+          `- MC バージョン: \`${mcVersion}\` に設定 ✓\n` +
+          `- Docker イメージ: \`${dockerImage}\` ✓\n` +
+          `- 再インストール実行 ✓`,
       );
     } catch (error) {
       logger.error(error);

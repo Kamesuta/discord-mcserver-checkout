@@ -5,7 +5,7 @@ import {
 import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-admin", "user", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "user", (builder) =>
   builder
     .setName("register")
     .setDescription("Pterodactylにユーザーを登録")
@@ -16,7 +16,7 @@ import { logger } from "@/utils/log";
         .setRequired(true),
     ),
 )
-export class PteroUserRegisterCommand extends Command {
+export class UserRegisterCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

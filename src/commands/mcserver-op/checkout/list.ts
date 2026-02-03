@@ -8,10 +8,10 @@ import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-admin", "checkout", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
   builder.setName("list").setDescription("貸出中サーバー一覧を表示"),
 )
-export class McServerAdminCheckoutListCommand extends Command {
+export class CheckoutListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

@@ -14,7 +14,7 @@ import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 import { prisma } from "@/utils/prisma";
 
-@RegisterSubCommandGroup("mcserver-admin", "workflow", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
     .setName("approve")
     .setDescription("申請を承認する")
@@ -26,7 +26,7 @@ import { prisma } from "@/utils/prisma";
         .setAutocomplete(true),
     ),
 )
-export class McServerAdminWorkflowApproveCommand extends Command {
+export class WorkflowApproveCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

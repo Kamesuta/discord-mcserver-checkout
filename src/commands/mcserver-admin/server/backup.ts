@@ -1,6 +1,6 @@
 import {
   Command,
-  RegisterSubCommand,
+  RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
@@ -8,7 +8,7 @@ import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommand("ptero", (builder) =>
+@RegisterSubCommandGroup("mcserver-admin", "server", (builder) =>
   builder
     .setName("backup")
     .setDescription("サーバーのバックアップを作成してダウンロード")
@@ -20,7 +20,7 @@ import { logger } from "@/utils/log";
         .setAutocomplete(true),
     ),
 )
-export class PteroBackupCommand extends Command {
+export class ServerBackupCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

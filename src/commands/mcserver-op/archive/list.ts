@@ -6,10 +6,10 @@ import { PaginatedMessageEmbedFields } from "@sapphire/discord.js-utilities";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-admin", "archive", (builder) =>
+@RegisterSubCommandGroup("mcserver-op", "archive", (builder) =>
   builder.setName("list").setDescription("アーカイブ済み企画の一覧を表示"),
 )
-export class McServerAdminArchiveListCommand extends Command {
+export class ArchiveListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
