@@ -1,5 +1,6 @@
 import { ApplyOptions } from "@sapphire/decorators";
 import {
+  type AutocompleteInteractionPayload,
   type ChatInputCommandErrorPayload,
   Events,
   type InteractionHandlerError,
@@ -55,5 +56,24 @@ export class InteractionHandlerErrorListener extends Listener {
     { handler, interaction: _ }: InteractionHandlerError,
   ) {
     this.container.logger.error(`[モーダルエラー] ${handler.name}`, error);
+  }
+}
+
+/**
+ * オートコンプリートのエラーがログに流れるようにする
+ */
+@ApplyOptions<Listener.Options>({
+  name: Events.CommandAutocompleteInteractionError,
+  event: Events.CommandAutocompleteInteractionError,
+})
+export class AutocompleteInteractionHandlerErrorListener extends Listener {
+  public override run(
+    error: Error,
+    { interaction: _, command }: AutocompleteInteractionPayload,
+  ) {
+    this.container.logger.error(
+      `[オートコンプリートエラー] ${command.name}`,
+      error,
+    );
   }
 }

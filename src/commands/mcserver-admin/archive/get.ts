@@ -4,6 +4,8 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder } from "discord.js";
 import { rcloneService } from "@/domain/services/RcloneService.js";
+import { workflowService } from "@/domain/services/WorkflowService.js";
+import { WorkflowStatus } from "@/generated/prisma/client.js";
 import { logger } from "@/utils/log.js";
 
 @RegisterSubCommandGroup("mcserver-admin", "archive", (builder) =>
@@ -91,33 +93,25 @@ export class McServerAdminArchiveGetCommand extends Command {
   ) {
     try {
       const focusedValue = interaction.options.getFocused().toString();
-      const folders = await rcloneService.listFolders();
 
-      // IDでパースして、フィルタリング
-      const parsedFolders = folders
-        .map((folder) => {
-          const match = folder.match(/^ID(\d+)_(.+)_(\d{4}-\d{2}-\d{2})_(.+)$/);
-          if (match) {
-            const [, id, name] = match;
-            return { id: Number.parseInt(id, 10), name, folder };
-          }
-          return null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
+      // データベースからRETURN済みワークフローを取得
+      const returnedWorkflows = await workflowService.findByStatus(
+        WorkflowStatus.RETURNED,
+      );
 
       // 入力値でフィルタリング（IDまたは企画名で検索）
-      const filtered = parsedFolders
+      const filtered = returnedWorkflows
         .filter(
-          (item) =>
-            item.id.toString().includes(focusedValue) ||
-            item.name.toLowerCase().includes(focusedValue.toLowerCase()),
+          (workflow) =>
+            workflow.id.toString().includes(focusedValue) ||
+            workflow.name.toLowerCase().includes(focusedValue.toLowerCase()),
         )
         .slice(0, 25); // Discordの制限
 
       await interaction.respond(
-        filtered.map((item) => ({
-          name: `ID: ${item.id} - ${item.name.length > 70 ? `${item.name.substring(0, 67)}...` : item.name}`,
-          value: item.id,
+        filtered.map((workflow) => ({
+          name: `ID: ${workflow.id} - ${workflow.name.length > 70 ? `${workflow.name.substring(0, 67)}...` : workflow.name}`,
+          value: workflow.id,
         })),
       );
     } catch (error) {
