@@ -4,7 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ButtonInteraction } from "discord.js";
-import { completeApproval } from "@/domain/flows/ApprovalFlow";
+import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({

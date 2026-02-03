@@ -4,7 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
-import { completeApproval } from "@/domain/flows/ApprovalFlow";
+import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
 import { logger } from "@/utils/log";
 import { prisma } from "@/utils/prisma";
