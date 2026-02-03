@@ -54,35 +54,28 @@ model Workflow {
   updatedAt          DateTime       @updatedAt
 
   /// パネル権限付与対象ユーザー一覧
-  panelUsers WorkflowPanelUser[]
-}
-
-/// 申請ごとのパネル権限付与対象ユーザー
-/// 1つの申請に複数のユーザーが対応する
-/// PterodactylUser への FK を持たない（申請時点で未登録の場合がある）
-model WorkflowPanelUser {
-  /// 主キー
-  id         Int    @id @default(autoincrement())
-  /// ワークフロー ID
-  workflowId Int
-  /// パネル権限付与対象ユーザーの Discord ユーザーID
-  discordId  String
-
-  /// Workflow への関連
-  workflow Workflow @relation(fields: [workflowId], references: [id])
+  panelUsers PterodactylUser[]
 }
 
 /// Discord ユーザーと Pterodactyl ユーザーの対応付け
-/// 承認フローで初回登録時に作成され、以降の申請で再利用される
+/// ワークフローのパネルユーザーとしても使用される
+/// reset-password 実行時に Pterodactyl 上にユーザーが作成される（lazy creation）
 model PterodactylUser {
   /// Discord ユーザーID（主キー）
-  discordId String   @id
+  discordId  String   @id
   /// Pterodactyl ユーザー名
-  username  String   @unique
+  username   String?  @unique
   /// メールアドレス (username@kpw.local)
-  email     String   @unique
+  email      String?  @unique
+  /// Pterodactyl 上にユーザーが作成済みかどうか
+  registered Boolean  @default(false)
   /// 登録日時
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  /// 更新日時
+  updatedAt  DateTime @updatedAt
+
+  /// パネル権限を持つワークフロー一覧
+  workflows Workflow[]
 }
 
 /// サーバーエイリアスとPterodactyl IDの対応付けを管理

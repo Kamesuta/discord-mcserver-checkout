@@ -5,6 +5,7 @@ import {
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
 import { activateWorkflow } from "@/domain/flows/ActivationFlow";
+import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
@@ -42,11 +43,14 @@ export class WorkflowOpCreateModal extends BaseCheckoutModalHandler {
 
     try {
       // 1. ワークフローを PENDING 状態で作成
-      const createdWorkflow = await workflowService.create({
-        ...fields,
-        applicantDiscordId: applicantId,
-        organizerDiscordId: organizerId,
-      });
+      const { workflow: createdWorkflow, newPanelUsers } =
+        await workflowService.create({
+          ...fields,
+          applicantDiscordId: applicantId,
+          organizerDiscordId: organizerId,
+        });
+
+      await notifyNewPanelUsers(interaction.client, newPanelUsers);
 
       // 2. panelUsers を含む完全なワークフローを取得
       const workflow = await workflowService.findById(createdWorkflow.id);

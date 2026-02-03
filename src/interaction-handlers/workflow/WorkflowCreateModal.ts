@@ -4,6 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
+import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
@@ -32,7 +33,7 @@ export class WorkflowCreateModal extends BaseCheckoutModalHandler {
     }
 
     try {
-      const workflow = await workflowService.create({
+      const { workflow, newPanelUsers } = await workflowService.create({
         ...fields,
         applicantDiscordId: interaction.user.id,
         organizerDiscordId: organizerId,
@@ -41,6 +42,8 @@ export class WorkflowCreateModal extends BaseCheckoutModalHandler {
       await interaction.editReply({
         content: `申請を受け付けました！\n申請ID: \`${workflow.id}\`\n管理者の承認をお待ちください。`,
       });
+
+      await notifyNewPanelUsers(interaction.client, newPanelUsers);
     } catch (error) {
       logger.error("申請作成中にエラーが発生しました:", error);
       await interaction.editReply("申請の保存中にエラーが発生しました。");

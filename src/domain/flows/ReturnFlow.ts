@@ -3,7 +3,6 @@ import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
-import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
@@ -60,21 +59,13 @@ export async function completeReturn(
   // 2. サーバー再インストール（初期化）
   await pterodactylCleanService.clean(serverId, workflow.mcVersion ?? "");
 
-  // 3. パネルユーザーの権限剥奪
-  const pteroUsers = await userService.findByDiscordIds(
-    workflow.panelUsers.map((u) => u.discordId),
-  );
-  for (const pteroUser of pteroUsers) {
-    await userService.removeUserFromServer(serverId, pteroUser.discordId);
-  }
-
-  // 4. ステータスを RETURNED に更新
+  // 3. ステータスを RETURNED に更新
   await workflowService.updateStatus({
     id: workflow.id,
     status: WorkflowStatus.RETURNED,
   });
 
-  // 5. 通知チャンネルに主催者へ返却通知
+  // 4. 通知チャンネルに主催者へ返却通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,

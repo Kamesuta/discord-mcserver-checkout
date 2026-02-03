@@ -49,12 +49,19 @@ class UserService {
       // Pterodactylに登録
       await pterodactylUserService.registerUser(username, email);
 
-      // DBに保存
-      await prisma.pterodactylUser.create({
-        data: {
+      // DBに保存（registered=true）
+      await prisma.pterodactylUser.upsert({
+        where: { discordId },
+        update: {
+          username,
+          email,
+          registered: true,
+        },
+        create: {
           discordId,
           username,
           email,
+          registered: true,
         },
       });
     } catch (error) {
@@ -73,8 +80,10 @@ class UserService {
    */
   public async resetPassword(discordId: string): Promise<string> {
     const user = await this.findByDiscordId(discordId);
-    if (!user) {
-      throw new Error("ユーザーが見つかりませんでした");
+    if (!user || !user.registered || !user.email) {
+      throw new Error(
+        "Pterodactyl ユーザーが登録されていません。管理者に連絡してください。",
+      );
     }
     return await pterodactylUserService.resetPassword(user.email);
   }
@@ -89,7 +98,7 @@ class UserService {
     discordId: string,
   ): Promise<void> {
     const user = await this.findByDiscordId(discordId);
-    if (!user) {
+    if (!user || !user.registered || !user.email) {
       throw new Error("ユーザーが見つかりませんでした");
     }
     await pterodactylUserService.addUser(serverId, user.email);
@@ -105,7 +114,7 @@ class UserService {
     discordId: string,
   ): Promise<void> {
     const user = await this.findByDiscordId(discordId);
-    if (!user) {
+    if (!user || !user.registered || !user.email) {
       throw new Error("ユーザーが見つかりませんでした");
     }
     await pterodactylUserService.removeUser(serverId, user.email);

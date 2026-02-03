@@ -4,7 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalSubmitInteraction } from "discord.js";
-import { userService } from "@/domain/services/UserService";
+import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type {
   BaseWorkflowParams,
   WorkflowWithUsers,
@@ -45,21 +45,19 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
       }
 
       // 基本フィールドを更新
-      await workflowService.update({
+      const { newPanelUsers } = await workflowService.update({
         id: workflowId,
         ...fields,
       });
 
       // 追加処理
       await this._handleEndDate(workflowId, workflow, fields);
-      const warnings = await this._handlePanelUsers(workflow, fields);
 
-      let message = `申請 (ID: \`${workflowId}\`) を編集しました。`;
-      if (warnings.length > 0) {
-        message += `\n\n⚠️ 警告:\n${warnings.join("\n")}`;
-      }
+      await interaction.editReply(
+        `申請 (ID: \`${workflowId}\`) を編集しました。`,
+      );
 
-      await interaction.editReply(message);
+      await notifyNewPanelUsers(interaction.client, newPanelUsers);
     } catch (error) {
       logger.error("申請編集中にエラーが発生しました:", error);
       await interaction.editReply("申請の編集中にエラーが発生しました。");
@@ -81,86 +79,5 @@ export class EditModalHandler extends BaseCheckoutModalHandler {
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + fields.periodDays);
     await workflowService.updateEndDate(workflowId, endDate);
-  }
-
-  /**
-   * パネルユーザーの変更をPterodactylに同期（ACTIVE状態の場合のみ）
-   * @returns 警告メッセージの配列
-   */
-  private async _handlePanelUsers(
-    workflow: WorkflowWithUsers,
-    fields: BaseWorkflowParams,
-  ): Promise<string[]> {
-    if (workflow.status !== WorkflowStatus.ACTIVE) return [];
-    if (!workflow.pteroServerId) return [];
-
-    const warnings: string[] = [];
-
-    const oldDiscordIds = workflow.panelUsers.map((u) => u.discordId);
-    const newDiscordIds = fields.panelUsers;
-
-    // 追加されたユーザー
-    const addedDiscordIds = newDiscordIds.filter(
-      (id) => !oldDiscordIds.includes(id),
-    );
-
-    // 削除されたユーザー
-    const removedDiscordIds = oldDiscordIds.filter(
-      (id) => !newDiscordIds.includes(id),
-    );
-
-    // 追加されたユーザーをPterodactylに追加
-    if (addedDiscordIds.length > 0) {
-      const addedPteroUsers =
-        await userService.findByDiscordIds(addedDiscordIds);
-
-      // 登録されていないユーザーを確認
-      const foundDiscordIds = addedPteroUsers.map((u) => u.discordId);
-      const unregisteredDiscordIds = addedDiscordIds.filter(
-        (id) => !foundDiscordIds.includes(id),
-      );
-
-      if (unregisteredDiscordIds.length > 0) {
-        warnings.push(
-          `以下のユーザーは Pterodactyl に登録されていません。\`/mcserver-op user register\` で登録してください: ${unregisteredDiscordIds.map((id) => `<@${id}>`).join(", ")}`,
-        );
-      }
-
-      for (const pteroUser of addedPteroUsers) {
-        try {
-          await userService.addUserToServer(
-            workflow.pteroServerId,
-            pteroUser.discordId,
-          );
-        } catch (error) {
-          logger.error(
-            `ユーザー ${pteroUser.discordId} の追加中にエラーが発生しました:`,
-            error,
-          );
-        }
-      }
-    }
-
-    // 削除されたユーザーをPterodactylから削除
-    if (removedDiscordIds.length > 0) {
-      const removedPteroUsers =
-        await userService.findByDiscordIds(removedDiscordIds);
-
-      for (const pteroUser of removedPteroUsers) {
-        try {
-          await userService.removeUserFromServer(
-            workflow.pteroServerId,
-            pteroUser.discordId,
-          );
-        } catch (error) {
-          logger.error(
-            `ユーザー ${pteroUser.discordId} の削除中にエラーが発生しました:`,
-            error,
-          );
-        }
-      }
-    }
-
-    return warnings;
   }
 }

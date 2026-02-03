@@ -4,7 +4,6 @@ import type {
   TextChannel,
 } from "discord.js";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
-import { userService } from "@/domain/services/UserService";
 import {
   type WorkflowWithUsers,
   workflowService,
@@ -57,19 +56,7 @@ export async function activateWorkflow(
     return null;
   }
 
-  // 3. パネルにユーザー追加・権限付与
-  const pteroUsers = await userService.findByDiscordIds(
-    workflow.panelUsers.map((u) => u.discordId),
-  );
-
-  for (const pteroUser of pteroUsers) {
-    await userService.addUserToServer(
-      availableServer.pteroId,
-      pteroUser.discordId,
-    );
-  }
-
-  // 4. サーバーをクリーン（skipReset=false の場合のみ）
+  // 3. サーバーをクリーン（skipReset=false の場合のみ）
   if (!skipReset) {
     await pterodactylCleanService.clean(
       availableServer.pteroId,
@@ -77,7 +64,7 @@ export async function activateWorkflow(
     );
   }
 
-  // 5. ステータスを ACTIVE に更新
+  // 4. ステータスを ACTIVE に更新
   const now = new Date();
   const endDate = new Date(
     now.getTime() + workflow.periodDays * 24 * 60 * 60 * 1000,
@@ -90,7 +77,7 @@ export async function activateWorkflow(
     endDate,
   });
 
-  // 6. 通知チャンネルに主催者へ通知
+  // 5. 通知チャンネルに主催者へ通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,

@@ -1,15 +1,22 @@
 import {
+  type PterodactylUser,
   type ServerBinding,
   type Workflow,
-  type WorkflowPanelUser,
   WorkflowStatus,
 } from "@/generated/prisma/client";
 import { prisma } from "@/utils/prisma";
 
 /** panelUsers を含む Workflow 型 */
 export type WorkflowWithUsers = Workflow & {
-  panelUsers: WorkflowPanelUser[];
+  panelUsers: PterodactylUser[];
 };
+
+/** create/update の戻り値 */
+export interface WorkflowResult<T> {
+  workflow: T;
+  /** 新規作成された仮ユーザーの Discord ID リスト（未登録通知用） */
+  newPanelUsers: string[];
+}
 
 /** モーダル入力で収集される申請コンテンツフィールド */
 export interface BaseWorkflowParams {
@@ -64,24 +71,36 @@ export class WorkflowService {
    * @param params 申請作成パラメータ
    * @returns 作成された申請情報
    */
-  public async create(params: CreateWorkflowParams): Promise<Workflow> {
-    return await prisma.workflow.create({
-      data: {
-        name: params.name,
-        description: params.description,
-        applicantDiscordId: params.applicantDiscordId,
-        organizerDiscordId: params.organizerDiscordId,
-        mcVersion: params.mcVersion,
-        periodDays: params.periodDays,
-        eventDate: params.eventDate,
-        status: WorkflowStatus.PENDING,
-        panelUsers: {
-          create: params.panelUsers.map((discordId) => ({ discordId })),
+  public async create(
+    params: CreateWorkflowParams,
+  ): Promise<WorkflowResult<Workflow>> {
+    return await prisma.$transaction(async (tx) => {
+      // panelUsers の PterodactylUser を作成（存在しない場合のみ）
+      const newPanelUsers = await this._ensurePterodactylUsers(
+        tx,
+        params.panelUsers,
+      );
+
+      const workflow = await tx.workflow.create({
+        data: {
+          name: params.name,
+          description: params.description,
+          applicantDiscordId: params.applicantDiscordId,
+          organizerDiscordId: params.organizerDiscordId,
+          mcVersion: params.mcVersion,
+          periodDays: params.periodDays,
+          eventDate: params.eventDate,
+          status: WorkflowStatus.PENDING,
+          panelUsers: {
+            connect: params.panelUsers.map((discordId) => ({ discordId })),
+          },
         },
-      },
-      include: {
-        panelUsers: true,
-      },
+        include: {
+          panelUsers: true,
+        },
+      });
+
+      return { workflow, newPanelUsers };
     });
   }
 
@@ -195,13 +214,32 @@ export class WorkflowService {
    */
   public async update(
     params: UpdateWorkflowParams,
-  ): Promise<WorkflowWithUsers> {
+  ): Promise<WorkflowResult<WorkflowWithUsers>> {
     return await prisma.$transaction(async (tx) => {
-      await tx.workflowPanelUser.deleteMany({
-        where: { workflowId: params.id },
+      // 既存の申請情報を取得
+      const existingWorkflow = await tx.workflow.findUnique({
+        where: { id: params.id },
+        include: { panelUsers: true },
       });
 
-      return await tx.workflow.update({
+      if (!existingWorkflow) {
+        throw new Error("申請が見つかりませんでした");
+      }
+
+      // 削除されるユーザーを特定
+      const oldDiscordIds = existingWorkflow.panelUsers.map((u) => u.discordId);
+      const removedDiscordIds = oldDiscordIds.filter(
+        (id) => !params.panelUsers.includes(id),
+      );
+
+      // 新しい panelUsers の PterodactylUser を作成（存在しない場合のみ）
+      const newPanelUsers = await this._ensurePterodactylUsers(
+        tx,
+        params.panelUsers,
+      );
+
+      // Workflow を更新（panelUsers をすべて disconnect してから connect）
+      const workflow = await tx.workflow.update({
         where: { id: params.id },
         data: {
           name: params.name,
@@ -210,13 +248,18 @@ export class WorkflowService {
           periodDays: params.periodDays,
           eventDate: params.eventDate ?? null,
           panelUsers: {
-            create: params.panelUsers.map((discordId) => ({ discordId })),
+            set: params.panelUsers.map((discordId) => ({ discordId })),
           },
         },
         include: {
           panelUsers: true,
         },
       });
+
+      // 削除された PterodactylUser をクリーンアップ
+      await this._cleanupUnusedPterodactylUsers(tx, removedDiscordIds);
+
+      return { workflow, newPanelUsers };
     });
   }
 
@@ -263,6 +306,56 @@ export class WorkflowService {
       where: { id },
       data: { endDate },
     });
+  }
+
+  /**
+   * PterodactylUser が存在しない場合は作成する（registered=false で作成）
+   * @param tx トランザクションクライアント
+   * @param discordIds Discord ID のリスト
+   * @returns 新規作成された Discord ID のリスト
+   */
+  private async _ensurePterodactylUsers(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    discordIds: string[],
+  ): Promise<string[]> {
+    const newPanelUsers: string[] = [];
+    for (const discordId of discordIds) {
+      const existing = await tx.pterodactylUser.findUnique({
+        where: { discordId },
+      });
+      if (!existing) {
+        await tx.pterodactylUser.create({
+          data: { discordId, registered: false },
+        });
+        newPanelUsers.push(discordId);
+      }
+    }
+    return newPanelUsers;
+  }
+
+  /**
+   * 使用されていない PterodactylUser を削除する
+   * registered=false かつ workflows が0件の場合のみ削除
+   * @param tx トランザクションクライアント
+   * @param discordIds チェック対象の Discord ID のリスト
+   */
+  private async _cleanupUnusedPterodactylUsers(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    discordIds: string[],
+  ): Promise<void> {
+    for (const discordId of discordIds) {
+      const user = await tx.pterodactylUser.findUnique({
+        where: { discordId },
+        include: { workflows: true },
+      });
+
+      // registered=false かつ workflows が0件なら削除
+      if (user && !user.registered && user.workflows.length === 0) {
+        await tx.pterodactylUser.delete({
+          where: { discordId },
+        });
+      }
+    }
   }
 }
 
