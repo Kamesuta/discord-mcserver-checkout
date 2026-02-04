@@ -33,7 +33,7 @@ export class WorkflowRegisterModal extends InteractionHandler {
           .trim();
 
         // Pterodactylに登録してDBに保存
-        await userService.registerUser(username, discordId);
+        await userService.registerUser(username, discordId, interaction.guild);
       }
 
       // 承認処理を続行

@@ -32,7 +32,7 @@ export class UserRegisterCommand extends Command {
     await interaction.deferReply();
 
     try {
-      await userService.registerUser(username, user.id);
+      await userService.registerUser(username, user.id, interaction.guild);
       await interaction.editReply(
         `<@${user.id}>を「${username}」として登録しました。`,
       );

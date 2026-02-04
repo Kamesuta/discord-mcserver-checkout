@@ -16,7 +16,6 @@ type ActivationInteraction = ButtonInteraction | ModalSubmitInteraction;
 
 /**
  * ワークフローをアクティブ化する共通処理
- * - パネルユーザーにロール付与
  * - サーバー割り当て
  * - パネルユーザー追加
  * - サーバーリセット（オプション）
@@ -33,21 +32,7 @@ export async function activateWorkflow(
   skipReset: boolean = false,
   notificationMessage: string = "サーバー貸出が承認されました！",
 ): Promise<{ serverName: string; endDate: Date } | null> {
-  const guild = interaction.guild;
-  if (!guild) {
-    await interaction.editReply("Guild情報が取得できませんでした。");
-    return null;
-  }
-
-  // 1. パネルユーザーに Discord ロール付与（未付与の場合のみ）
-  for (const panelUser of workflow.panelUsers) {
-    const member = await guild.members.fetch(panelUser.discordId);
-    if (!member.roles.cache.has(env.DISCORD_PANEL_USER_ROLE_ID)) {
-      await member.roles.add(env.DISCORD_PANEL_USER_ROLE_ID);
-    }
-  }
-
-  // 2. 利用可能なサーバーを検索
+  // 1. 利用可能なサーバーを検索
   const availableServer = await workflowService.findAvailableServer();
   if (!availableServer) {
     await interaction.editReply(
@@ -56,7 +41,7 @@ export async function activateWorkflow(
     return null;
   }
 
-  // 3. サーバーを再インストール（skipReset=false の場合のみ）
+  // 2. サーバーを再インストール（skipReset=false の場合のみ）
   if (!skipReset) {
     await pterodactylCleanService.reinstall(
       availableServer.pteroId,
@@ -64,7 +49,7 @@ export async function activateWorkflow(
     );
   }
 
-  // 4. ステータスを ACTIVE に更新
+  // 3. ステータスを ACTIVE に更新
   const now = new Date();
   const endDate = new Date(
     now.getTime() + workflow.periodDays * 24 * 60 * 60 * 1000,
@@ -77,7 +62,7 @@ export async function activateWorkflow(
     endDate,
   });
 
-  // 5. 通知チャンネルに主催者へ通知
+  // 4. 通知チャンネルに主催者へ通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,

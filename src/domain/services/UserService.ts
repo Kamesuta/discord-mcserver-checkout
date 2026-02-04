@@ -1,5 +1,7 @@
+import type { Guild } from "discord.js";
 import { pterodactylUserService } from "@/domain/services/pterodactyl/PterodactylUserService";
 import type { PterodactylUser } from "@/generated/prisma/client";
+import env from "@/utils/env";
 import { logger } from "@/utils/log";
 import { prisma } from "@/utils/prisma";
 
@@ -35,13 +37,15 @@ class UserService {
   }
 
   /**
-   * PterodactylにユーザーIDを登録し、DBにも保存
+   * PterodactylにユーザーIDを登録し、DBにも保存し、Discordロールを付与
    * @param username ニックネーム (半角英数)
    * @param discordId Discord ID
+   * @param guild Discord Guild（ロール付与に使用、nullの場合はスキップ）
    */
   public async registerUser(
     username: string,
     discordId: string,
+    guild: Guild | null = null,
   ): Promise<void> {
     try {
       const email = `${username}@kpw.local`;
@@ -64,6 +68,14 @@ class UserService {
           registered: true,
         },
       });
+
+      // Discord ロール付与（未付与の場合のみ）
+      if (guild) {
+        const member = await guild.members.fetch(discordId);
+        if (!member.roles.cache.has(env.DISCORD_PANEL_USER_ROLE_ID)) {
+          await member.roles.add(env.DISCORD_PANEL_USER_ROLE_ID);
+        }
+      }
     } catch (error) {
       logger.error(
         `ユーザー ${username} (Discord ID: ${discordId}) の登録中にエラーが発生しました:`,
