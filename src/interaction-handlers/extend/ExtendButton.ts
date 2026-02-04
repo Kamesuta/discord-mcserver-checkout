@@ -3,7 +3,7 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ButtonInteraction } from "discord.js";
+import { ButtonBuilder, type ButtonInteraction, ButtonStyle } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
@@ -12,6 +12,15 @@ import { logger } from "@/utils/log";
   interactionHandlerType: InteractionHandlerTypes.Button,
 })
 export class ExtendButton extends InteractionHandler {
+  static build(workflowId: number): ButtonBuilder {
+    return new ButtonBuilder()
+      .setCustomId(
+        `extend-workflow?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+      )
+      .setLabel("1週間延長")
+      .setStyle(ButtonStyle.Primary);
+  }
+
   public override parse(interaction: ButtonInteraction) {
     if (!interaction.customId.startsWith("extend-workflow")) return this.none();
     return this.some();

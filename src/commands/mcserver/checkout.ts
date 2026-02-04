@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import { WorkflowCreateModal } from "@/interaction-handlers/workflow/WorkflowCreateModal";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder
@@ -19,15 +19,9 @@ export class McServerCheckoutCommand extends Command {
     const organizer =
       interaction.options.getUser("organizer") ?? interaction.user;
 
-    const params = new URLSearchParams({
-      organizerId: organizer.id,
+    const modal = WorkflowCreateModal.build(organizer.id, {
+      panelUsers: [interaction.user.id],
     });
-
-    const modal = BaseCheckoutModalHandler.build(
-      `checkout-modal?${params.toString()}`,
-      "サーバー貸出申請",
-      { panelUsers: [interaction.user.id] },
-    );
 
     await interaction.showModal(modal);
   }

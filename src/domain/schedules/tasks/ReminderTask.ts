@@ -1,14 +1,14 @@
 import type { SapphireClient } from "@sapphire/framework";
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
+  type ButtonBuilder,
   type TextChannel,
 } from "discord.js";
 import type { ScheduledTask } from "@/domain/schedules/Scheduler";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { ExtendButton } from "@/interaction-handlers/extend/ExtendButton";
 import env from "@/utils/env";
 import { sapphireLogger } from "@/utils/log";
 
@@ -115,14 +115,8 @@ export class ReminderTask implements ScheduledTask {
         : null;
 
       // 延期ボタン
-      const params = new URLSearchParams({ workflowId: String(workflow.id) });
-      const extendButton = new ButtonBuilder()
-        .setCustomId(`extend-workflow?${params.toString()}`)
-        .setLabel("1週間延長")
-        .setStyle(ButtonStyle.Primary);
-
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        extendButton,
+        ExtendButton.build(workflow.id),
       );
 
       await (channel as TextChannel).send({

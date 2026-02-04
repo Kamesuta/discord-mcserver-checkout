@@ -3,15 +3,8 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import {
-  ButtonBuilder,
-  type ButtonInteraction,
-  ButtonStyle,
-  LabelBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-} from "discord.js";
+import { ButtonBuilder, type ButtonInteraction, ButtonStyle } from "discord.js";
+import { WorkflowRegisterModal } from "@/interaction-handlers/workflow/WorkflowRegisterModal";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.Button,
@@ -40,34 +33,7 @@ export class WorkflowRegisterButton extends InteractionHandler {
     const guild = interaction.guild;
     if (!guild) return;
 
-    const modal = new ModalBuilder()
-      .setCustomId(
-        `register-modal?workflowId=${workflowId}&users=${users.join(",")}`,
-      )
-      .setTitle("パネルユーザー登録");
-
-    for (const discordId of users) {
-      let label = discordId;
-      try {
-        const member = await guild.members.fetch(discordId);
-        label = member.displayName;
-      } catch {
-        // ユーザー情報取得失敗時はIDを使用
-      }
-
-      modal.addLabelComponents(
-        new LabelBuilder()
-          .setLabel(`${label} のユーザー名`)
-          .setTextInputComponent(
-            new TextInputBuilder()
-              .setCustomId(`username-${discordId}`)
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder("半角英数のみ")
-              .setRequired(true),
-          ),
-      );
-    }
-
+    const modal = await WorkflowRegisterModal.build(workflowId, users, guild);
     await interaction.showModal(modal);
   }
 }

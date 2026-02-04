@@ -31,15 +31,15 @@ export interface CheckoutModalDefaults {
  * フィールド抽出・バリデーションを共通化し、
  * サブクラスで execute に実行ロジックを実装する。
  */
-export abstract class BaseCheckoutModalHandler extends InteractionHandler {
+export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
   /**
    * サーバー貸出申請モーダルを生成する。
-   * /mcserver checkout と /mcserver-op workflow edit で共有される。
+   * サブクラスの static build から呼び出す。
    * @param customId モーダルの customId
    * @param title モーダルのタイトル
    * @param defaults デフォルト値（省略時は空）
    */
-  public static build(
+  protected static buildModal(
     customId: string,
     title: string,
     defaults?: CheckoutModalDefaults,
@@ -209,7 +209,7 @@ export abstract class BaseCheckoutModalHandler extends InteractionHandler {
 
     // 日付と企画名をパース
     const { eventDate, name } =
-      BaseCheckoutModalHandler._parseNameWithDate(nameInput);
+      WorkflowBaseCheckoutModal._parseNameWithDate(nameInput);
 
     const panelUsersField = interaction.fields.fields.get("panel-users");
     const panelUsers =

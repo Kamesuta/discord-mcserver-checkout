@@ -2,17 +2,13 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-} from "discord.js";
+import { ActionRowBuilder, type ButtonBuilder, EmbedBuilder } from "discord.js";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
 import { logger } from "@/utils/log";
 
 /**
@@ -130,17 +126,9 @@ export class CheckoutReturnCommand extends Command {
       });
 
       // 確認ボタン
-      const params = new URLSearchParams({
-        workflowId: String(workflow.id),
-        skipReset: skipReset.toString(),
-        skipArchive: skipArchive.toString(),
-      });
-      const button = new ButtonBuilder()
-        .setCustomId(`return-confirm?${params.toString()}`)
-        .setLabel("返却を実行")
-        .setStyle(ButtonStyle.Danger);
-
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        ReturnConfirmButton.build(workflow.id, skipReset, skipArchive),
+      );
       await interaction.editReply({ embeds: [embed], components: [row] });
     } catch (error) {
       logger.error(error);

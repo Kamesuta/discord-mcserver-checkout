@@ -3,7 +3,7 @@ import {
   type InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ModalSubmitInteraction } from "discord.js";
+import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
 import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type {
   BaseWorkflowParams,
@@ -11,13 +11,27 @@ import type {
 } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import {
+  type CheckoutModalDefaults,
+  WorkflowBaseCheckoutModal,
+} from "@/interaction-handlers/workflow/WorkflowBaseModal";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
 })
-export class EditModalHandler extends BaseCheckoutModalHandler {
+export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
+  static build(
+    workflowId: number,
+    defaults?: CheckoutModalDefaults,
+  ): ModalBuilder {
+    return WorkflowBaseCheckoutModal.buildModal(
+      `edit-modal?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+      "申請編集",
+      defaults,
+    );
+  }
+
   public override parse(interaction: ModalSubmitInteraction) {
     if (!interaction.customId.startsWith("edit-modal")) return this.none();
     return this.some();

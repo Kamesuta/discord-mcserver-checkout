@@ -1,8 +1,7 @@
 import type { SapphireClient } from "@sapphire/framework";
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
+  type ButtonBuilder,
   EmbedBuilder,
   type TextChannel,
 } from "discord.js";
@@ -10,6 +9,8 @@ import type { ScheduledTask } from "@/domain/schedules/Scheduler";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { ExtendButton } from "@/interaction-handlers/extend/ExtendButton";
+import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
 import env from "@/utils/env";
 import { sapphireLogger } from "@/utils/log";
 
@@ -118,20 +119,9 @@ export class AutoReturnTask implements ScheduledTask {
         });
 
       // 延期ボタンと返却ボタン
-      const params = new URLSearchParams({ workflowId: String(workflow.id) });
-      const extendButton = new ButtonBuilder()
-        .setCustomId(`extend-workflow?${params.toString()}`)
-        .setLabel("1週間延長")
-        .setStyle(ButtonStyle.Primary);
-
-      const returnButton = new ButtonBuilder()
-        .setCustomId(`return-confirm?${params.toString()}`)
-        .setLabel("返却を実行")
-        .setStyle(ButtonStyle.Danger);
-
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        extendButton,
-        returnButton,
+        ExtendButton.build(workflow.id),
+        ReturnConfirmButton.build(workflow.id, false, false),
       );
 
       await (channel as TextChannel).send({

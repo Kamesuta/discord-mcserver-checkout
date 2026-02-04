@@ -6,6 +6,7 @@ import {
 import {
   ActionRowBuilder,
   type ButtonBuilder,
+  type ModalBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
 import { activateWorkflow } from "@/domain/flows/ActivationFlow";
@@ -13,13 +14,33 @@ import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import {
+  type CheckoutModalDefaults,
+  WorkflowBaseCheckoutModal,
+} from "@/interaction-handlers/workflow/WorkflowBaseModal";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
 })
-export class WorkflowOpCreateModal extends BaseCheckoutModalHandler {
+export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
+  static build(
+    organizerId: string,
+    applicantId: string,
+    skipReset: boolean,
+    defaults?: CheckoutModalDefaults,
+  ): ModalBuilder {
+    return WorkflowBaseCheckoutModal.buildModal(
+      `workflow-create?${new URLSearchParams({
+        organizerId,
+        applicantId,
+        skipReset: String(skipReset),
+      })}`,
+      "サーバー貸出作成（管理者）",
+      defaults,
+    );
+  }
+
   public override parse(interaction: ModalSubmitInteraction) {
     if (!interaction.customId.startsWith("workflow-create")) return this.none();
     return this.some();

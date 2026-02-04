@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import { WorkflowOpCreateModal } from "@/interaction-handlers/workflow/WorkflowOpCreateModal";
 
 @RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
   builder
@@ -34,15 +34,10 @@ export class CheckoutCreateCommand extends Command {
     const applicant = interaction.options.getUser("applicant") ?? organizer;
     const skipReset = interaction.options.getBoolean("skip-reset") ?? false;
 
-    const params = new URLSearchParams({
-      organizerId: organizer.id,
-      applicantId: applicant.id,
-      skipReset: skipReset.toString(),
-    });
-
-    const modal = BaseCheckoutModalHandler.build(
-      `workflow-create?${params.toString()}`,
-      "サーバー貸出作成（管理者）",
+    const modal = WorkflowOpCreateModal.build(
+      organizer.id,
+      applicant.id,
+      skipReset,
       { panelUsers: [organizer.id] },
     );
 

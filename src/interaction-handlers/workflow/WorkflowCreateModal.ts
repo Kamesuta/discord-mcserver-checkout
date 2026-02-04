@@ -3,17 +3,31 @@ import {
   type InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ModalSubmitInteraction } from "discord.js";
+import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
 import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import {
+  type CheckoutModalDefaults,
+  WorkflowBaseCheckoutModal,
+} from "@/interaction-handlers/workflow/WorkflowBaseModal";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
   interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
 })
-export class WorkflowCreateModal extends BaseCheckoutModalHandler {
+export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
+  static build(
+    organizerId: string,
+    defaults?: CheckoutModalDefaults,
+  ): ModalBuilder {
+    return WorkflowBaseCheckoutModal.buildModal(
+      `checkout-modal?${new URLSearchParams({ organizerId })}`,
+      "サーバー貸出申請",
+      defaults,
+    );
+  }
+
   public override parse(interaction: ModalSubmitInteraction) {
     if (!interaction.customId.startsWith("checkout-modal")) return this.none();
     return this.some();

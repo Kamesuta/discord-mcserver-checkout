@@ -6,7 +6,7 @@ import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
+import { WorkflowEditModal } from "@/interaction-handlers/workflow/WorkflowEditModal";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
@@ -47,21 +47,13 @@ export class WorkflowEditCommand extends Command {
       return;
     }
 
-    const params = new URLSearchParams({
-      workflowId: String(workflow.id),
+    const modal = WorkflowEditModal.build(workflow.id, {
+      name: workflow.name,
+      period: String(workflow.periodDays),
+      mcVersion: workflow.mcVersion ?? undefined,
+      panelUsers: workflow.panelUsers.map((u) => u.discordId),
+      description: workflow.description ?? undefined,
     });
-
-    const modal = BaseCheckoutModalHandler.build(
-      `edit-modal?${params.toString()}`,
-      "申請編集",
-      {
-        name: workflow.name,
-        period: String(workflow.periodDays),
-        mcVersion: workflow.mcVersion ?? undefined,
-        panelUsers: workflow.panelUsers.map((u) => u.discordId),
-        description: workflow.description ?? undefined,
-      },
-    );
 
     await interaction.showModal(modal);
   }
