@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -25,7 +25,7 @@ export class ArchiveGetCommand extends Command {
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const workflowId = interaction.options.getInteger("id", true);
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       // 全フォルダを取得して、IDに一致するものを検索
@@ -60,14 +60,14 @@ export class ArchiveGetCommand extends Command {
         .setTitle("アーカイブ共有リンク")
         .setColor(0x2ecc71)
         .addFields(
-          { name: "企画ID", value: `${workflowId}`, inline: true },
           ...(folderInfo
             ? [
+                { name: "主催者", value: folderInfo.organizer },
                 { name: "企画名", value: folderInfo.name, inline: true },
+                { name: "申請ID", value: `${workflowId}`, inline: true },
                 { name: "日付", value: folderInfo.date, inline: true },
-                { name: "主催者", value: folderInfo.organizer, inline: false },
               ]
-            : []),
+            : [{ name: "申請ID", value: `${workflowId}`, inline: true }]),
           { name: "フォルダ名", value: `\`${targetFolder}\``, inline: false },
           { name: "共有リンク", value: shareLink, inline: false },
         )

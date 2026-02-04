@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import type { ServerBinding } from "@/generated/prisma/browser";
 import { logger } from "@/utils/log";
@@ -13,7 +14,7 @@ export class ServerBindingListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const bindings = await serverBindingService.list();

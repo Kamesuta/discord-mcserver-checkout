@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { logger } from "@/utils/log";
@@ -24,7 +25,7 @@ export class CheckoutServerStatusCommand extends Command {
   ) {
     const name = interaction.options.getString("server", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       // サーバー名をPterodactyl IDに変換

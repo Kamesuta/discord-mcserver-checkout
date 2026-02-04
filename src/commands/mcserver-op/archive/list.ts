@@ -2,7 +2,11 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { PaginatedMessageEmbedFields } from "@sapphire/discord.js-utilities";
+import {
+  PaginatedFieldMessageEmbed,
+  PaginatedMessageEmbedFields,
+} from "@sapphire/discord.js-utilities";
+import { MessageFlags } from "discord.js";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { logger } from "@/utils/log";
 
@@ -13,7 +17,7 @@ export class ArchiveListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const folders = await rcloneService.listFolders();
@@ -23,7 +27,7 @@ export class ArchiveListCommand extends Command {
       const parsedFolders = folders
         .map((folderName) => {
           const match = folderName.match(
-            /^ID(\d+)_(.+)_(\d{4}-\d{2}-\d{2})_(.+)$/,
+            /^ID(\d+)_\[(.+)\]_(\d{4}-\d{2}-\d{2})_(.+)$/,
           );
           if (match) {
             const [, id, name, date, organizer] = match;
@@ -31,7 +35,8 @@ export class ArchiveListCommand extends Command {
           }
           return null;
         })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => Number(b.id) - Number(a.id));
 
       if (parsedFolders.length === 0) {
         await interaction.editReply("アーカイブされた企画はありません。");
@@ -39,7 +44,7 @@ export class ArchiveListCommand extends Command {
       }
 
       // PaginatedMessageを使用してページング
-      const paginatedMessage = new PaginatedMessageEmbedFields()
+      const paginatedMessage = new PaginatedFieldMessageEmbed()
         .setTemplate({
           color: 0x95a5a6,
           title: "アーカイブ済み企画一覧",
@@ -47,14 +52,14 @@ export class ArchiveListCommand extends Command {
             `全${parsedFolders.length}件のアーカイブが見つかりました。\n` +
             "`/mcserver_admin archive get <企画ID>` で共有リンクを取得できます。",
         })
+        .setTitleField("企画一覧")
         .setItems(
-          parsedFolders.map((item) => ({
-            name: `${item.name} (ID: ${item.id})`,
-            value: `📅 ${item.date}\n👤 ${item.organizer}\n📁 \`${item.folderName}\``,
-            inline: false,
-          })),
+          parsedFolders.map(
+            (item) =>
+              `${item.date}「${item.name}」(ID:${item.id}, ${item.organizer})`,
+          ),
         )
-        .setItemsPerPage(10)
+        .setItemsPerPage(25)
         .make();
 
       await paginatedMessage.run(interaction);

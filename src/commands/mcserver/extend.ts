@@ -2,9 +2,11 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import env from "@/utils/env.js";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver", (builder) =>
@@ -14,7 +16,7 @@ export class McServerExtendCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       // ユーザーが主催者のACTIVEな申請を検索
@@ -46,12 +48,22 @@ export class McServerExtendCommand extends Command {
         : null;
 
       await interaction.editReply(
-        `サーバー貸出を1週間延長しました。\n\n` +
+        `「${userWorkflow.name}」(ID: ${userWorkflow.id})のサーバー貸出を1週間延長しました。\n\n` +
           `申請ID: ${userWorkflow.id}\n` +
           `企画: ${userWorkflow.name}\n` +
           `サーバー: \`${serverName ?? userWorkflow.pteroServerId ?? "未割り当て"}\`\n` +
-          `新しい期限: ${newEndDate.toLocaleDateString("ja-JP")}`,
+          `新しい期限: <t:${Math.floor(newEndDate.getTime() / 1000)}:D>`,
       );
+
+      // チャンネルに通知
+      const channel = await interaction.client.channels.fetch(
+        env.DISCORD_NOTIFY_CHANNEL_ID,
+      );
+      if (channel?.isSendable()) {
+        await channel.send(
+          `<@${interaction.user.id}>が「${userWorkflow.name}」(ID:${userWorkflow.id},鯖:${serverName},主催:<@${userWorkflow.organizerDiscordId}>)のサーバー貸出を1週間延長しました。`,
+        );
+      }
 
       logger.info(
         `Workflow ${userWorkflow.id} extended by ${interaction.user.id} (${interaction.user.tag}) via command`,

@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { logger } from "@/utils/log";
 
@@ -22,7 +23,7 @@ export class ServerBindingUnsetCommand extends Command {
   ) {
     const name = interaction.options.getString("name", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       await serverBindingService.unset(name);

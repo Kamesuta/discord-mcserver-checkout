@@ -2,7 +2,12 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { ActionRowBuilder, type ButtonBuilder, EmbedBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  type ButtonBuilder,
+  EmbedBuilder,
+  MessageFlags,
+} from "discord.js";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -19,7 +24,7 @@ function formatSize(bytes: number): string {
   if (kb >= 1024) {
     return `${(kb / 1024).toFixed(1)} MB`;
   }
-  return `${Math.round(kb)} KB`;
+  return `${Math.ceil(kb)} KB`;
 }
 
 @RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
@@ -53,7 +58,7 @@ export class CheckoutReturnCommand extends Command {
     const id = interaction.options.getInteger("id", true);
     const skipReset = interaction.options.getBoolean("skip-reset") ?? false;
     const skipArchive = interaction.options.getBoolean("skip-archive") ?? false;
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const workflow = await workflowService.findById(id);
@@ -83,47 +88,54 @@ export class CheckoutReturnCommand extends Command {
         workflow.pteroServerId,
       );
 
+      const endDateStr = workflow.endDate
+        ? `<t:${Math.floor(workflow.endDate.getTime() / 1000)}:R>`
+        : "未設定";
+
       // Embed 作成
       const embed = new EmbedBuilder()
-        .setTitle(`返却 — ID: ${workflow.id} — ${workflow.name}`)
         .setColor(0xe74c3c)
+        .setTitle(`「${serverName}」返却`)
         .addFields(
           { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
-          {
-            name: "パネルユーザー",
-            value: workflow.panelUsers
-              .map((u) => `<@${u.discordId}>`)
-              .join(", "),
-          },
-          {
-            name: "サーバー",
-            value: `\`${serverName ?? workflow.pteroServerId}\``,
-          },
-          {
-            name: "期限",
-            value: workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定",
-          },
+          { name: "申請ID", value: workflow.id.toString(), inline: true },
+          { name: "企画", value: workflow.name, inline: true },
+          { name: "期限", value: endDateStr, inline: true },
         );
+
+      if (skipArchive && !skipReset) {
+        embed.addFields({
+          name: "⚠️データ消失注意",
+          value:
+            "バックアップを取らず**初期化されます**！\n十分注意してください！",
+        });
+      }
+      if (skipArchive || skipReset) {
+        const warnMessages: string[] = [];
+        if (skipArchive) {
+          warnMessages.push("- バックアップtar.gzは作成されません");
+        }
+        if (skipReset) {
+          warnMessages.push("- 初期化はされません");
+        }
+        embed.addFields({
+          name: "スキップ",
+          value: warnMessages.join("\n"),
+        });
+      }
 
       // ロック済みバックアップ一覧（アーカイブ対象）
       if (locked.length > 0) {
         embed.addFields({
-          name: "アーカイブ対象（ロック済みバックアップ）",
+          name: "追加アーカイブ対象（ロック済みバックアップ）",
           value: locked
             .map(
               (b) =>
-                `🔒 ${b.attributes.name} (${formatSize(b.attributes.size)})`,
+                `🔒 ${b.attributes.name} (${formatSize(b.attributes.bytes)})`,
             )
             .join("\n"),
         });
       }
-
-      embed.addFields({
-        name: "アーカイブ処理",
-        value:
-          "ロック済みバックアップと最新ファイル状態（一時バックアップ）を" +
-          "アーカイブし、ロック済みバックアップのロックを解除します。",
-      });
 
       // 確認ボタン
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(

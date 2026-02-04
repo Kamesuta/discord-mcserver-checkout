@@ -8,6 +8,7 @@ import {
   ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
+  MessageFlags,
 } from "discord.js";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { logger } from "@/utils/log";
@@ -40,7 +41,7 @@ export class WorkflowApproveButton extends InteractionHandler {
   }
 
   public override async run(interaction: ButtonInteraction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const [, query] = interaction.customId.split("?");
     const workflowId = Number(new URLSearchParams(query).get("workflowId"));

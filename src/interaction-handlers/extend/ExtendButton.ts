@@ -3,7 +3,12 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import { ButtonBuilder, type ButtonInteraction, ButtonStyle } from "discord.js";
+import {
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
+  MessageFlags,
+} from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
@@ -31,7 +36,7 @@ export class ExtendButton extends InteractionHandler {
     const params = new URLSearchParams(query);
     const workflowId = Number(params.get("workflowId"));
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const workflow = await workflowService.findById(workflowId);
@@ -60,8 +65,8 @@ export class ExtendButton extends InteractionHandler {
       await workflowService.updateEndDate(workflowId, newEndDate);
 
       await interaction.editReply(
-        `申請 (ID: ${workflowId}) を1週間延長しました。\n` +
-          `新しい期限: ${newEndDate.toLocaleDateString("ja-JP")}`,
+        `期限 (ID: ${workflowId}) を1週間延長しました。\n` +
+          `新しい期限: <t:${Math.floor(newEndDate.getTime() / 1000)}:R>`,
       );
 
       logger.info(

@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { PaginatedMessageEmbedFields } from "@sapphire/discord.js-utilities";
+import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import type { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
@@ -29,7 +30,7 @@ export class WorkflowListCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const statusParam = interaction.options.getString("status") ?? "PENDING";
@@ -56,20 +57,36 @@ export class WorkflowListCommand extends Command {
           description: `全${workflows.length}件の申請が見つかりました。`,
         })
         .setItems(
-          workflows.map((wf) => ({
-            name: `ID: ${wf.id} — ${wf.name}`,
-            value: [
-              `申請者: <@${wf.applicantDiscordId}>`,
-              `主催者: <@${wf.organizerDiscordId}>`,
-              `パネルユーザー: ${wf.panelUsers.map((u) => `<@${u.discordId}>`).join(", ")}`,
-              `バージョン: ${wf.mcVersion ?? "未指定"}`,
-              `期間: ${wf.periodDays}日`,
-              wf.description ? `補足: ${wf.description}` : "",
-            ]
-              .filter(Boolean)
-              .join("\n"),
-            inline: false,
-          })),
+          workflows.map((wf) => {
+            // パネルユーザーが主催者と同じ場合は表示しない
+            const isOrganizerOnly =
+              wf.panelUsers.length === 1 &&
+              wf.panelUsers[0].discordId === wf.organizerDiscordId;
+            const panelUserText = isOrganizerOnly
+              ? []
+              : [
+                  `パネルユーザー: ${wf.panelUsers.map((u) => `<@${u.discordId}>`).join(", ")}`,
+                ];
+
+            // 申請者が主催者と違う場合表示
+            const applicantText =
+              wf.applicantDiscordId === wf.organizerDiscordId
+                ? ""
+                : ` (申請者: <@${wf.applicantDiscordId}>)`;
+
+            return {
+              name: `ID: ${wf.id} — ${wf.name}`,
+              value: [
+                `主催者: <@${wf.organizerDiscordId}>${applicantText}`,
+                ...panelUserText,
+                `期間: ${wf.periodDays}日, バージョン: ${wf.mcVersion ?? "未指定"}`,
+                wf.description ? `補足: ${wf.description}` : "",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+              inline: false,
+            };
+          }),
         )
         .setItemsPerPage(10)
         .make();

@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { logger } from "@/utils/log";
 
@@ -29,7 +30,7 @@ export class ServerBindingSetCommand extends Command {
     const name = interaction.options.getString("name", true);
     const pteroId = interaction.options.getString("ptero-id", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       await serverBindingService.set(name, pteroId);

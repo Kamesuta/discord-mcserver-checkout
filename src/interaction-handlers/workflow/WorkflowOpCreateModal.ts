@@ -98,10 +98,7 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
 
       if (result) {
         await interaction.editReply(
-          `サーバー貸出を作成しました！\n` +
-            `申請ID: \`${workflow.id}\`\n` +
-            `サーバー: \`${result.serverName}\`\n` +
-            `期限: ${result.endDate.toLocaleDateString("ja-JP")}` +
+          `サーバーを貸し出しました！ (ID: ${workflow.id})` +
             (skipReset ? "\n⚠️ サーバーはリセットされていません" : ""),
         );
       }

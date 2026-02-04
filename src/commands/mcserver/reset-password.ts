@@ -29,7 +29,7 @@ export class McServerResetPasswordCommand extends Command {
 
       const newPassword = await userService.resetPassword(interaction.user.id);
       await interaction.editReply(
-        `パスワードをリセットしました。\n新しいパスワード: \`${newPassword}\``,
+        `パスワードをリセットしました。\nID: \`${pteroUser.username}\`\n新しいパスワード: \`${newPassword}\``,
       );
     } catch (error) {
       logger.error(error);

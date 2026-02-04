@@ -2,6 +2,7 @@ import type { SapphireClient } from "@sapphire/framework";
 import {
   ActionRowBuilder,
   type ButtonBuilder,
+  EmbedBuilder,
   type TextChannel,
 } from "discord.js";
 import type { ScheduledTask } from "@/domain/schedules/Scheduler";
@@ -99,15 +100,16 @@ export class ReminderTask implements ScheduledTask {
       const channel = await client.channels.fetch(
         env.DISCORD_NOTIFY_CHANNEL_ID,
       );
-      if (!channel?.isTextBased()) {
+      if (!channel?.isSendable()) {
         sapphireLogger.error(
           `[ReminderTask] Notify channel ${env.DISCORD_NOTIFY_CHANNEL_ID} is not a text channel`,
         );
         return;
       }
 
-      const endDateStr =
-        workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定";
+      const endDateStr = workflow.endDate
+        ? `<t:${Math.floor(workflow.endDate.getTime() / 1000)}:R>`
+        : "未設定";
 
       // サーバーのバインディング名を取得
       const serverName = workflow.pteroServerId
@@ -119,16 +121,22 @@ export class ReminderTask implements ScheduledTask {
         ExtendButton.build(workflow.id),
       );
 
-      await (channel as TextChannel).send({
-        content:
-          `<@${organizerDiscordId}> <@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
-          `**【リマインド】サーバー貸出期限のお知らせ**\n\n` +
-          `企画: ${workflow.name}\n` +
-          `申請ID: ${workflow.id}\n` +
-          `サーバー: \`${serverName ?? workflow.pteroServerId ?? "未割り当て"}\`\n` +
-          `期限: ${endDateStr}\n` +
-          `**残り ${daysRemaining} 日**\n\n` +
-          `期限が近づいています。延長が必要な場合は下のボタンを押してください。`,
+      const embed = new EmbedBuilder()
+        .setColor(0xff9800)
+        .setTitle(`「${serverName}」貸出期限のお知らせ`)
+        .addFields(
+          { name: "主催者", value: `<@${organizerDiscordId}>` },
+          { name: "申請ID", value: workflow.id.toString(), inline: true },
+          { name: "企画", value: workflow.name, inline: true },
+          { name: "期限", value: endDateStr, inline: true },
+        )
+        .setFooter({
+          text: "延長ボタンを押して延長処理を開始してください",
+        });
+
+      await channel.send({
+        content: `<@${organizerDiscordId}>【リマインド】サーバー貸出期限のお知らせ`,
+        embeds: [embed],
         components: [row],
       });
 

@@ -1,6 +1,7 @@
 import { InteractionHandler } from "@sapphire/framework";
 import {
   LabelBuilder,
+  MessageFlags,
   ModalBuilder,
   type ModalSubmitInteraction,
   TextInputBuilder,
@@ -254,7 +255,7 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
   ): Promise<void>;
 
   public override async run(interaction: ModalSubmitInteraction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const fields = await this.extractFields(interaction);
     if (!fields) return;

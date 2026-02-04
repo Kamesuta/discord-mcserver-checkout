@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -33,7 +34,7 @@ export class CheckoutExtendCommand extends Command {
     const id = interaction.options.getInteger("id", true);
     const dateStr = interaction.options.getString("date", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       // 日付パース
@@ -72,7 +73,7 @@ export class CheckoutExtendCommand extends Command {
         case WorkflowStatus.ACTIVE: {
           await workflowService.updateEndDate(id, targetDate);
           await interaction.editReply(
-            `申請 (ID: \`${id}\`) の終了日を \`${targetDate.toLocaleDateString("ja-JP")}\` に更新しました。`,
+            `申請 (ID: \`${id}\`) の終了日を <t:${Math.floor(targetDate.getTime() / 1000)}:D> に更新しました。`,
           );
           break;
         }

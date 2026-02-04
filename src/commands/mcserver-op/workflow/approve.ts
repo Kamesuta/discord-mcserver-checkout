@@ -2,7 +2,12 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { ActionRowBuilder, type ButtonBuilder, EmbedBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  type ButtonBuilder,
+  EmbedBuilder,
+  MessageFlags,
+} from "discord.js";
 import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
@@ -29,7 +34,7 @@ export class WorkflowApproveCommand extends Command {
   ) {
     const id = interaction.options.getInteger("id", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const workflow = await workflowService.findById(id);

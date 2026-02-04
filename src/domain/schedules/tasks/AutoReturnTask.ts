@@ -74,15 +74,16 @@ export class AutoReturnTask implements ScheduledTask {
       const channel = await client.channels.fetch(
         env.DISCORD_NOTIFY_CHANNEL_ID,
       );
-      if (!channel?.isTextBased()) {
+      if (!channel?.isSendable()) {
         sapphireLogger.error(
-          `[AutoReturnTask] Notify channel ${env.DISCORD_NOTIFY_CHANNEL_ID} is not a text channel`,
+          `[AutoReturnTask] Notify channel ${env.DISCORD_NOTIFY_CHANNEL_ID} is not a sendable channel`,
         );
         return;
       }
 
-      const endDateStr =
-        workflow.endDate?.toLocaleDateString("ja-JP") ?? "未設定";
+      const endDateStr = workflow.endDate
+        ? `<t:${Math.floor(workflow.endDate.getTime() / 1000)}:R>`
+        : "未設定";
       const now = new Date();
       const overdueDays = workflow.endDate
         ? Math.floor(
@@ -105,14 +106,14 @@ export class AutoReturnTask implements ScheduledTask {
         )
         .setColor(0xff9800)
         .addFields(
-          { name: "企画名", value: workflow.name },
           { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
+          { name: "申請ID", value: workflow.id.toString(), inline: true },
+          { name: "企画", value: workflow.name, inline: true },
+          { name: "期限", value: endDateStr, inline: true },
           {
             name: "サーバー",
             value: `\`${serverName ?? workflow.pteroServerId ?? "未割り当て"}\``,
           },
-          { name: "期限", value: endDateStr },
-          { name: "期限超過", value: `${overdueDays} 日経過` },
         )
         .setFooter({
           text: "返却ボタンをクリックして返却処理を開始してください",

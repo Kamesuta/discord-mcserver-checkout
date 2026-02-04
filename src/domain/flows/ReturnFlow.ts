@@ -1,4 +1,8 @@
-import type { ButtonInteraction, TextChannel } from "discord.js";
+import {
+  type ButtonInteraction,
+  EmbedBuilder,
+  type TextChannel,
+} from "discord.js";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
@@ -78,16 +82,23 @@ export async function completeReturn(
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,
     );
-    if (channel?.isTextBased()) {
-      await (channel as TextChannel).send(
-        `<@${workflow.organizerDiscordId}>\n` +
-          `**サーバー貸出が返却されました。**\n\n` +
-          `申請ID: ${workflow.id}\n` +
-          `企画: ${workflow.name}\n` +
-          `サーバー: \`${serverName ?? serverId}\`` +
-          (skipArchive ? "\n⚠️ アーカイブは実行されていません" : "") +
-          (skipReset ? "\n⚠️ サーバーリセットは実行されていません" : ""),
-      );
+    if (channel?.isSendable()) {
+      const embed = new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle(`「${serverName}」返却`)
+        .addFields(
+          { name: "企画", value: workflow.name },
+          { name: "申請ID", value: workflow.id.toString(), inline: true },
+          {
+            name: "主催者",
+            value: `<@${workflow.organizerDiscordId}>`,
+            inline: true,
+          },
+        );
+      await channel.send({
+        content: `${interaction.user}によってサーバー貸出が返却されました。`,
+        embeds: [embed],
+      });
     }
   } catch (error) {
     // 通知送信失敗は無視（ログには記録される）

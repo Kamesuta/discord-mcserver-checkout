@@ -8,6 +8,7 @@ import {
   ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
+  MessageFlags,
 } from "discord.js";
 import { completeReturn } from "@/domain/flows/ReturnFlow";
 import { logger } from "@/utils/log";
@@ -62,7 +63,7 @@ export class ReturnConfirmButton extends InteractionHandler {
     const skipReset = params.get("skipReset") === "true";
     const skipArchive = params.get("skipArchive") === "true";
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       await completeReturn(interaction, workflowId, skipReset, skipArchive);

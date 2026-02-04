@@ -46,7 +46,7 @@ interface PterodactylBackup {
     /** バックアップがロックされているかどうか */
     is_locked: boolean;
     /** バックアップサイズ (バイト) */
-    size: number;
+    bytes: number;
     /** 作成日時 */
     created_at: string;
     /** 完了日時 */

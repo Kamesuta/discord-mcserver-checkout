@@ -15,9 +15,9 @@ export async function notifyNewPanelUsers(
 
   try {
     const channel = await client.channels.fetch(env.DISCORD_NOTIFY_CHANNEL_ID);
-    if (channel?.isTextBased()) {
+    if (channel?.isSendable()) {
       const mentions = newPanelUsers.map((id) => `<@${id}>`).join(", ");
-      await (channel as TextChannel).send(
+      await channel.send(
         `<@&${env.DISCORD_ADMIN_ROLE_ID}>\n` +
           `以下のユーザーがパネルユーザーとして追加されました。\n` +
           `\`/mcserver-op user register\` で Pterodactyl ユーザーとして登録してください: ${mentions}`,

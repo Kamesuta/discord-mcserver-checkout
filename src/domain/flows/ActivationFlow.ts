@@ -2,6 +2,7 @@ import {
   ActionRowBuilder,
   type ButtonBuilder,
   type ButtonInteraction,
+  EmbedBuilder,
   type ModalSubmitInteraction,
   type TextChannel,
 } from "discord.js";
@@ -70,16 +71,28 @@ export async function activateWorkflow(
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,
     );
-    if (channel?.isTextBased()) {
-      await (channel as TextChannel).send(
-        `<@${workflow.organizerDiscordId}>\n` +
-          `**${notificationMessage}**\n\n` +
-          `申請ID: ${workflow.id}\n` +
-          `企画: ${workflow.name}\n` +
-          `サーバー: \`${availableServer.name}\`\n` +
-          `期限: ${endDate.toLocaleDateString("ja-JP")}` +
-          (skipReset ? "\n⚠️ サーバーはリセットされていません" : ""),
-      );
+    if (channel?.isSendable()) {
+      const embed = new EmbedBuilder()
+        .setColor(0xe74c3c)
+        .setTitle(`「${availableServer.name}」貸出`)
+        .setDescription(notificationMessage)
+        .addFields(
+          { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
+          { name: "申請ID", value: workflow.id.toString(), inline: true },
+          { name: "企画", value: workflow.name, inline: true },
+          {
+            name: "期限",
+            value: `<t:${Math.floor(endDate.getTime() / 1000)}:R>`,
+            inline: true,
+          },
+        );
+
+      await channel.send({
+        content:
+          `<@${workflow.organizerDiscordId}> サーバー貸し出しが承認されました！\n` +
+          `/mcserver reset-password からパスワードをリセット後、鯖管理パネルにログインできます！`,
+        embeds: [embed],
+      });
     }
   } catch (error) {
     // 通知送信失敗は無視（ログには記録される）
@@ -119,7 +132,7 @@ export async function completeApproval(
 
     if (result) {
       await interaction.editReply(
-        `承認完了！サーバー \`${result.serverName}\` を割り当てました。\n期限: ${result.endDate.toLocaleDateString("ja-JP")}`,
+        `承認完了！サーバー \`${result.serverName}\` を割り当てました。\n期限: <t:${Math.floor(result.endDate.getTime() / 1000)}:D>`,
       );
     }
   } catch (error) {

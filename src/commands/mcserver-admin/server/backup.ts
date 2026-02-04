@@ -2,6 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
+import { MessageFlags } from "discord.js";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
@@ -26,7 +27,7 @@ export class ServerBackupCommand extends Command {
   ) {
     const name = interaction.options.getString("server", true);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       // サーバー名をPterodactyl IDに変換

@@ -6,6 +6,7 @@ import {
 import {
   type Guild,
   LabelBuilder,
+  MessageFlags,
   ModalBuilder,
   type ModalSubmitInteraction,
   TextInputBuilder,
@@ -61,7 +62,7 @@ export class WorkflowRegisterModal extends InteractionHandler {
   }
 
   public override async run(interaction: ModalSubmitInteraction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
