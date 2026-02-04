@@ -8,6 +8,7 @@ import {
 import type { ScheduledTask } from "@/domain/schedules/Scheduler";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { ExtendButton } from "@/interaction-handlers/extend/ExtendButton";
 import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
@@ -81,9 +82,6 @@ export class AutoReturnTask implements ScheduledTask {
         return;
       }
 
-      const endDateStr = workflow.endDate
-        ? `<t:${Math.floor(workflow.endDate.getTime() / 1000)}:R>`
-        : "未設定";
       const now = new Date();
       const overdueDays = workflow.endDate
         ? Math.floor(
@@ -105,16 +103,7 @@ export class AutoReturnTask implements ScheduledTask {
             `以下のサーバー貸出が期限切れです。返却処理を実行してください。`,
         )
         .setColor(0xff9800)
-        .addFields(
-          { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
-          { name: "申請ID", value: workflow.id.toString(), inline: true },
-          { name: "企画", value: workflow.name, inline: true },
-          { name: "期限", value: endDateStr, inline: true },
-          {
-            name: "サーバー",
-            value: `\`${serverName ?? workflow.pteroServerId ?? "未割り当て"}\``,
-          },
-        )
+        .addFields(...workflowFields({ ...workflow, serverName }))
         .setFooter({
           text: "返却ボタンをクリックして返却処理を開始してください",
         });

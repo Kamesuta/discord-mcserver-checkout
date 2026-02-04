@@ -2,10 +2,7 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import {
-  PaginatedFieldMessageEmbed,
-  PaginatedMessageEmbedFields,
-} from "@sapphire/discord.js-utilities";
+import { PaginatedFieldMessageEmbed } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { logger } from "@/utils/log";

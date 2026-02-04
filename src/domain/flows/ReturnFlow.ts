@@ -1,8 +1,4 @@
-import {
-  type ButtonInteraction,
-  EmbedBuilder,
-  type TextChannel,
-} from "discord.js";
+import { type ButtonInteraction, EmbedBuilder } from "discord.js";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
@@ -10,6 +6,7 @@ import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
+import { workflowFields } from "../utils/workflowFields.js";
 
 /**
  * 返却処理の本体：アーカイブ・サーバーリセット・通知
@@ -86,15 +83,7 @@ export async function completeReturn(
       const embed = new EmbedBuilder()
         .setColor(0x2ecc71)
         .setTitle(`「${serverName}」返却`)
-        .addFields(
-          { name: "企画", value: workflow.name },
-          { name: "申請ID", value: workflow.id.toString(), inline: true },
-          {
-            name: "主催者",
-            value: `<@${workflow.organizerDiscordId}>`,
-            inline: true,
-          },
-        );
+        .addFields(...workflowFields({ ...workflow, serverName }));
       await channel.send({
         content: `${interaction.user}によってサーバー貸出が返却されました。`,
         embeds: [embed],

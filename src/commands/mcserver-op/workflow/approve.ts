@@ -11,6 +11,7 @@ import {
 import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { workflowFields } from "@/domain/utils/workflowFields.js";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import { WorkflowRegisterButton } from "@/interaction-handlers/workflow/WorkflowRegisterButton";
@@ -62,11 +63,10 @@ export class WorkflowApproveCommand extends Command {
 
       // 申請内容 Embed
       const embed = new EmbedBuilder()
-        .setTitle(`申請 ID: ${workflow.id} — ${workflow.name}`)
+        .setTitle(`申請内容`)
         .setColor(unregistered.length > 0 ? 0xf39c12 : 0x2ecc71)
         .addFields(
-          { name: "申請者", value: `<@${workflow.applicantDiscordId}>` },
-          { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
+          ...workflowFields(workflow),
           {
             name: "パネルユーザー",
             value: workflow.panelUsers

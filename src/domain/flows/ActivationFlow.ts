@@ -4,13 +4,13 @@ import {
   type ButtonInteraction,
   EmbedBuilder,
   type ModalSubmitInteraction,
-  type TextChannel,
 } from "discord.js";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import {
   type WorkflowWithUsers,
   workflowService,
 } from "@/domain/services/WorkflowService";
+import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import env from "@/utils/env";
@@ -77,14 +77,11 @@ export async function activateWorkflow(
         .setTitle(`「${availableServer.name}」貸出`)
         .setDescription(notificationMessage)
         .addFields(
-          { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
-          { name: "申請ID", value: workflow.id.toString(), inline: true },
-          { name: "企画", value: workflow.name, inline: true },
-          {
-            name: "期限",
-            value: `<t:${Math.floor(endDate.getTime() / 1000)}:R>`,
-            inline: true,
-          },
+          ...workflowFields({
+            ...workflow,
+            endDate,
+            serverName: availableServer.name,
+          }),
         );
 
       await channel.send({

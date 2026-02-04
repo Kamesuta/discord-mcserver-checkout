@@ -1,4 +1,4 @@
-import type { Client, TextChannel } from "discord.js";
+import type { Client } from "discord.js";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 

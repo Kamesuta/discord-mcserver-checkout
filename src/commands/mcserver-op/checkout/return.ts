@@ -12,6 +12,7 @@ import { pterodactylBackupService } from "@/domain/services/pterodactyl/Pterodac
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
+import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
 import { logger } from "@/utils/log";
@@ -88,20 +89,11 @@ export class CheckoutReturnCommand extends Command {
         workflow.pteroServerId,
       );
 
-      const endDateStr = workflow.endDate
-        ? `<t:${Math.floor(workflow.endDate.getTime() / 1000)}:R>`
-        : "未設定";
-
       // Embed 作成
       const embed = new EmbedBuilder()
         .setColor(0xe74c3c)
         .setTitle(`「${serverName}」返却`)
-        .addFields(
-          { name: "主催者", value: `<@${workflow.organizerDiscordId}>` },
-          { name: "申請ID", value: workflow.id.toString(), inline: true },
-          { name: "企画", value: workflow.name, inline: true },
-          { name: "期限", value: endDateStr, inline: true },
-        );
+        .addFields(...workflowFields({ ...workflow, serverName }));
 
       if (skipArchive && !skipReset) {
         embed.addFields({
