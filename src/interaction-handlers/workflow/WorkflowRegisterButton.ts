@@ -3,8 +3,10 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ButtonInteraction } from "discord.js";
 import {
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
   LabelBuilder,
   ModalBuilder,
   TextInputBuilder,
@@ -15,6 +17,15 @@ import {
   interactionHandlerType: InteractionHandlerTypes.Button,
 })
 export class WorkflowRegisterButton extends InteractionHandler {
+  static build(workflowId: number, users: string[]): ButtonBuilder {
+    return new ButtonBuilder()
+      .setCustomId(
+        `register-button?${new URLSearchParams({ workflowId: String(workflowId), users: users.join(",") })}`,
+      )
+      .setLabel("ユーザー登録して承認")
+      .setStyle(ButtonStyle.Primary);
+  }
+
   public override parse(interaction: ButtonInteraction) {
     if (!interaction.customId.startsWith("register-button")) return this.none();
     return this.some();

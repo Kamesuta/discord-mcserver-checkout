@@ -1,7 +1,9 @@
-import type {
-  ButtonInteraction,
-  ModalSubmitInteraction,
-  TextChannel,
+import {
+  ActionRowBuilder,
+  type ButtonBuilder,
+  type ButtonInteraction,
+  type ModalSubmitInteraction,
+  type TextChannel,
 } from "discord.js";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import {
@@ -9,6 +11,7 @@ import {
   workflowService,
 } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
@@ -123,6 +126,12 @@ export async function completeApproval(
     logger.error("承認処理中にエラーが発生しました:", error);
     const message =
       error instanceof Error ? error.message : "不明なエラーが発生しました";
-    await interaction.editReply(`エラーが発生しました: ${message}`);
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      WorkflowApproveButton.buildRetry(workflowId),
+    );
+    await interaction.editReply({
+      content: `エラーが発生しました: ${message}`,
+      components: [row],
+    });
   }
 }

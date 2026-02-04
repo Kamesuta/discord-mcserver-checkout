@@ -3,11 +3,16 @@ import {
   type InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ModalSubmitInteraction } from "discord.js";
+import {
+  ActionRowBuilder,
+  type ButtonBuilder,
+  type ModalSubmitInteraction,
+} from "discord.js";
 import { activateWorkflow } from "@/domain/flows/ActivationFlow";
 import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import { BaseCheckoutModalHandler } from "@/interaction-handlers/workflow/WorkflowBaseModal";
 import { logger } from "@/utils/log";
 
@@ -41,6 +46,8 @@ export class WorkflowOpCreateModal extends BaseCheckoutModalHandler {
       return;
     }
 
+    let createdWorkflowId: number | null = null;
+
     try {
       // 1. ワークフローを PENDING 状態で作成
       const { workflow: createdWorkflow, newPanelUsers } =
@@ -49,6 +56,7 @@ export class WorkflowOpCreateModal extends BaseCheckoutModalHandler {
           applicantDiscordId: applicantId,
           organizerDiscordId: organizerId,
         });
+      createdWorkflowId = createdWorkflow.id;
 
       await notifyNewPanelUsers(interaction.client, newPanelUsers);
 
@@ -80,7 +88,17 @@ export class WorkflowOpCreateModal extends BaseCheckoutModalHandler {
       logger.error("サーバー貸出作成中にエラーが発生しました:", error);
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
-      await interaction.editReply(`エラーが発生しました: ${message}`);
+      if (createdWorkflowId) {
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          WorkflowApproveButton.buildRetry(createdWorkflowId),
+        );
+        await interaction.editReply({
+          content: `エラーが発生しました: ${message}\n申請ID: \`${createdWorkflowId}\``,
+          components: [row],
+        });
+      } else {
+        await interaction.editReply(`エラーが発生しました: ${message}`);
+      }
     }
   }
 }

@@ -3,7 +3,12 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ButtonInteraction } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
+} from "discord.js";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { logger } from "@/utils/log";
 
@@ -11,6 +16,24 @@ import { logger } from "@/utils/log";
   interactionHandlerType: InteractionHandlerTypes.Button,
 })
 export class WorkflowApproveButton extends InteractionHandler {
+  static build(workflowId: number): ButtonBuilder {
+    return new ButtonBuilder()
+      .setCustomId(
+        `approve-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+      )
+      .setLabel("承認を実行")
+      .setStyle(ButtonStyle.Success);
+  }
+
+  static buildRetry(workflowId: number): ButtonBuilder {
+    return new ButtonBuilder()
+      .setCustomId(
+        `approve-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+      )
+      .setLabel("再試行")
+      .setStyle(ButtonStyle.Primary);
+  }
+
   public override parse(interaction: ButtonInteraction) {
     if (!interaction.customId.startsWith("approve-button")) return this.none();
     return this.some();
@@ -28,7 +51,13 @@ export class WorkflowApproveButton extends InteractionHandler {
       logger.error("承認処理中にエラーが発生しました:", error);
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
-      await interaction.editReply(`エラーが発生しました: ${message}`);
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        WorkflowApproveButton.buildRetry(workflowId),
+      );
+      await interaction.editReply({
+        content: `エラーが発生しました: ${message}`,
+        components: [row],
+      });
     }
   }
 }

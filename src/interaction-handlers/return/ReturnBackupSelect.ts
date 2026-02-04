@@ -3,7 +3,12 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import type { ButtonInteraction } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
+} from "discord.js";
 import { completeReturn } from "@/domain/flows/ReturnFlow";
 import { logger } from "@/utils/log";
 
@@ -31,7 +36,17 @@ export class ReturnConfirmButton extends InteractionHandler {
       logger.error("返却処理中にエラーが発生しました:", error);
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
-      await interaction.editReply(`エラーが発生しました: ${message}`);
+      const retryButton = new ButtonBuilder()
+        .setCustomId(interaction.customId)
+        .setLabel("再試行")
+        .setStyle(ButtonStyle.Primary);
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        retryButton,
+      );
+      await interaction.editReply({
+        content: `エラーが発生しました: ${message}`,
+        components: [row],
+      });
     }
   }
 }

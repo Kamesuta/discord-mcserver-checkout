@@ -2,16 +2,13 @@ import {
   Command,
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-} from "discord.js";
+import { ActionRowBuilder, type ButtonBuilder, EmbedBuilder } from "discord.js";
 import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
+import { WorkflowRegisterButton } from "@/interaction-handlers/workflow/WorkflowRegisterButton";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
@@ -84,27 +81,14 @@ export class WorkflowApproveCommand extends Command {
 
       // ボタン
       if (unregistered.length > 0) {
-        const params = new URLSearchParams({
-          workflowId: String(workflow.id),
-          users: unregistered.join(","),
-        });
-        const button = new ButtonBuilder()
-          .setCustomId(`register-button?${params.toString()}`)
-          .setLabel("ユーザー登録して承認")
-          .setStyle(ButtonStyle.Primary);
-
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          WorkflowRegisterButton.build(workflow.id, unregistered),
+        );
         await interaction.editReply({ embeds: [embed], components: [row] });
       } else {
-        const params = new URLSearchParams({
-          workflowId: String(workflow.id),
-        });
-        const button = new ButtonBuilder()
-          .setCustomId(`approve-button?${params.toString()}`)
-          .setLabel("承認を実行")
-          .setStyle(ButtonStyle.Success);
-
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          WorkflowApproveButton.build(workflow.id),
+        );
         await interaction.editReply({ embeds: [embed], components: [row] });
       }
     } catch (error) {
