@@ -1,0 +1,43 @@
+diff --git a/node_modules/@sapphire/pieces/dist/cjs/lib/strategies/LoaderStrategy.cjs b/node_modules/@sapphire/pieces/dist/cjs/lib/strategies/LoaderStrategy.cjs
+index 45d50de..814684f 100644
+--- a/node_modules/@sapphire/pieces/dist/cjs/lib/strategies/LoaderStrategy.cjs
++++ b/node_modules/@sapphire/pieces/dist/cjs/lib/strategies/LoaderStrategy.cjs
+@@ -15,7 +15,7 @@ var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { en
+ var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+-}) : x)(function(x) {
++}) : x)(function (x) {
+   if (typeof require !== "undefined") return require.apply(this, arguments);
+   throw Error('Dynamic require of "' + x + '" is not supported');
+ });
+@@ -42,9 +42,9 @@ var _LoaderStrategy = class _LoaderStrategy {
+     const mjs = [".mjs", ".mts"].includes(file.extension) || [".js", ".ts"].includes(file.extension) && this.clientUsesESModules;
+     if (mjs) {
+       const url$1 = url.pathToFileURL(file.path);
+-      url$1.searchParams.append("d", Date.now().toString());
+-      url$1.searchParams.append("name", file.name);
+-      url$1.searchParams.append("extension", file.extension);
++      // url$1.searchParams.append("d", Date.now().toString());
++      // url$1.searchParams.append("name", file.name);
++      // url$1.searchParams.append("extension", file.extension);
+       return internal_cjs.mjsImport(url$1);
+     }
+     const mod = __require(file.path);
+diff --git a/node_modules/@sapphire/pieces/dist/esm/lib/strategies/LoaderStrategy.mjs b/node_modules/@sapphire/pieces/dist/esm/lib/strategies/LoaderStrategy.mjs
+index e73e4e2..0081677 100644
+--- a/node_modules/@sapphire/pieces/dist/esm/lib/strategies/LoaderStrategy.mjs
++++ b/node_modules/@sapphire/pieces/dist/esm/lib/strategies/LoaderStrategy.mjs
+@@ -31,9 +31,9 @@ var _LoaderStrategy = class _LoaderStrategy {
+     const mjs = [".mjs", ".mts"].includes(file.extension) || [".js", ".ts"].includes(file.extension) && this.clientUsesESModules;
+     if (mjs) {
+       const url = pathToFileURL(file.path);
+-      url.searchParams.append("d", Date.now().toString());
+-      url.searchParams.append("name", file.name);
+-      url.searchParams.append("extension", file.extension);
++      // url.searchParams.append("d", Date.now().toString());
++      // url.searchParams.append("name", file.name);
++      // url.searchParams.append("extension", file.extension);
+       return mjsImport(url);
+     }
+     const mod = __require(file.path);

@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "node --require tsx src/index.ts",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
@@ -41,6 +42,7 @@
     "if-env": "^1.0.4",
     "log4js": "^6.9.1",
     "node-schedule": "^2.1.1",
+    "patch-package": "^8.0.1",
     "prisma": "^7.2.0",
     "semver": "^7.7.3",
     "toml": "^3.0.0",
