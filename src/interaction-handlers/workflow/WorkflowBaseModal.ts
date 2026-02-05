@@ -26,7 +26,6 @@ export interface CheckoutModalDefaults {
 }
 
 /**
- * /mcserver checkout と /mcserver-op workflow edit で共有される
  * モーダルハンドラーの基底クラス。
  *
  * フィールド抽出・バリデーションを共通化し、

@@ -5,6 +5,7 @@ import {
   EmbedBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
+import { McServerResetPasswordCommand } from "@/commands/mcserver/reset-password";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import {
   type WorkflowWithUsers,
@@ -84,10 +85,13 @@ export async function activateWorkflow(
           }),
         );
 
+      const resetPasswordMention = McServerResetPasswordCommand.mention.resolve(
+        interaction.guildId,
+      );
       await channel.send({
         content:
           `<@${workflow.organizerDiscordId}> サーバー貸し出しが承認されました！\n` +
-          `/mcserver reset-password からパスワードをリセット後、鯖管理パネルにログインできます！`,
+          `${resetPasswordMention} からパスワードをリセット後、鯖管理パネルにログインできます！`,
         embeds: [embed],
       });
     }

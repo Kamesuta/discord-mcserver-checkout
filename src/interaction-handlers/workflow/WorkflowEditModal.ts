@@ -71,7 +71,11 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
         `申請 (ID: \`${workflowId}\`) を編集しました。`,
       );
 
-      await notifyNewPanelUsers(interaction.client, newPanelUsers);
+      await notifyNewPanelUsers(
+        interaction.client,
+        newPanelUsers,
+        interaction.guild,
+      );
     } catch (error) {
       logger.error("申請編集中にエラーが発生しました:", error);
       await interaction.editReply("申請の編集中にエラーが発生しました。");

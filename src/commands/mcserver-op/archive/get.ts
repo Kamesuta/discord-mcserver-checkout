@@ -3,9 +3,11 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder, MessageFlags } from "discord.js";
+import { ArchiveListCommand } from "@/commands/mcserver-op/archive/list";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import { CommandMention } from "@/utils/CommandMention";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "archive", (builder) =>
@@ -15,12 +17,15 @@ import { logger } from "@/utils/log";
     .addIntegerOption((option) =>
       option
         .setName("id")
-        .setDescription("企画ID（/mcserver_admin archive listで確認）")
+        .setDescription(`企画ID（${ArchiveListCommand.mention.text()}で確認）`)
         .setRequired(true)
         .setAutocomplete(true),
     ),
 )
 export class ArchiveGetCommand extends Command {
+  public static readonly mention = new CommandMention(
+    "mcserver-op/archive/get",
+  );
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
@@ -35,9 +40,12 @@ export class ArchiveGetCommand extends Command {
       );
 
       if (!targetFolder) {
+        const listCommandMention = ArchiveListCommand.mention.resolve(
+          interaction.guildId,
+        );
         await interaction.editReply(
           `企画ID ${workflowId} のアーカイブが見つかりませんでした。\n` +
-            "`/mcserver_admin archive list` で一覧を確認してください。",
+            `${listCommandMention} で一覧を確認してください。`,
         );
         return;
       }
@@ -80,10 +88,13 @@ export class ArchiveGetCommand extends Command {
       logger.error(error);
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
+      const listCommandMention = ArchiveListCommand.mention.resolve(
+        interaction.guildId,
+      );
       await interaction.editReply(
         `共有リンクの取得に失敗しました: ${message}\n\n` +
           `企画IDが正しいか確認してください。\n` +
-          `\`/mcserver_admin archive list\` で一覧を確認できます。`,
+          `${listCommandMention} で一覧を確認できます。`,
       );
     }
   }

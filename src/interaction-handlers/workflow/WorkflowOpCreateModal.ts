@@ -79,7 +79,11 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
         });
       createdWorkflowId = createdWorkflow.id;
 
-      await notifyNewPanelUsers(interaction.client, newPanelUsers);
+      await notifyNewPanelUsers(
+        interaction.client,
+        newPanelUsers,
+        interaction.guild,
+      );
 
       // 2. panelUsers を含む完全なワークフローを取得
       const workflow = await workflowService.findById(createdWorkflow.id);

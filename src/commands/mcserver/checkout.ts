@@ -3,6 +3,7 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { WorkflowCreateModal } from "@/interaction-handlers/workflow/WorkflowCreateModal";
+import { CommandMention } from "@/utils/CommandMention";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder
@@ -13,6 +14,7 @@ import { WorkflowCreateModal } from "@/interaction-handlers/workflow/WorkflowCre
     ),
 )
 export class McServerCheckoutCommand extends Command {
+  public static readonly mention = new CommandMention("mcserver/checkout");
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

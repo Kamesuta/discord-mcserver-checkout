@@ -7,6 +7,7 @@ import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowEditModal } from "@/interaction-handlers/workflow/WorkflowEditModal";
+import { CommandMention } from "@/utils/CommandMention";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder
@@ -21,6 +22,9 @@ import { WorkflowEditModal } from "@/interaction-handlers/workflow/WorkflowEditM
     ),
 )
 export class WorkflowEditCommand extends Command {
+  public static readonly mention = new CommandMention(
+    "mcserver-op/workflow/edit",
+  );
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

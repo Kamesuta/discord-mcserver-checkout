@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { userService } from "@/domain/services/UserService";
+import { CommandMention } from "@/utils/CommandMention";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver", (builder) =>
@@ -12,6 +13,10 @@ import { logger } from "@/utils/log";
     .setDescription("Pterodactylのパスワードをリセットする"),
 )
 export class McServerResetPasswordCommand extends Command {
+  public static readonly mention = new CommandMention(
+    "mcserver/reset-password",
+  );
+
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {

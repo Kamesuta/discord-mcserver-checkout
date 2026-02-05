@@ -4,13 +4,18 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { PaginatedFieldMessageEmbed } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
+import { ArchiveGetCommand } from "@/commands/mcserver-op/archive/get";
 import { rcloneService } from "@/domain/services/RcloneService";
+import { CommandMention } from "@/utils/CommandMention";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "archive", (builder) =>
   builder.setName("list").setDescription("アーカイブ済み企画の一覧を表示"),
 )
 export class ArchiveListCommand extends Command {
+  public static readonly mention = new CommandMention(
+    "mcserver-op/archive/list",
+  );
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
@@ -41,13 +46,16 @@ export class ArchiveListCommand extends Command {
       }
 
       // PaginatedMessageを使用してページング
+      const getCommandMention = ArchiveGetCommand.mention.resolve(
+        interaction.guildId,
+      );
       const paginatedMessage = new PaginatedFieldMessageEmbed()
         .setTemplate({
           color: 0x95a5a6,
           title: "アーカイブ済み企画一覧",
           description:
             `全${parsedFolders.length}件のアーカイブが見つかりました。\n` +
-            "`/mcserver_admin archive get <企画ID>` で共有リンクを取得できます。",
+            `${getCommandMention} で共有リンクを取得できます。`,
         })
         .setTitleField("企画一覧")
         .setItems(
