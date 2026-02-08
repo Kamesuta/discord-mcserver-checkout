@@ -11,6 +11,8 @@ import {
   MessageFlags,
 } from "discord.js";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
+import { workflowService } from "@/domain/services/WorkflowService";
+import { WorkflowRegisterModal } from "@/interaction-handlers/workflow/WorkflowRegisterModal";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -41,10 +43,45 @@ export class WorkflowApproveButton extends InteractionHandler {
   }
 
   public override async run(interaction: ButtonInteraction) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
     const [, query] = interaction.customId.split("?");
     const workflowId = Number(new URLSearchParams(query).get("workflowId"));
+
+    // ワークフロー情報を取得
+    const workflow = await workflowService.findById(workflowId);
+    if (!workflow) {
+      await interaction.reply({
+        content: "申請が見つかりませんでした。",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    // 未登録のパネルユーザーをチェック
+    const unregisteredUsers = workflow.panelUsers
+      .filter((user) => !user.registered)
+      .map((user) => user.discordId);
+
+    // 未登録ユーザーがいる場合は登録モーダルを表示
+    if (unregisteredUsers.length > 0) {
+      if (!interaction.guild) {
+        await interaction.reply({
+          content: "ギルド情報が取得できませんでした。",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const modal = await WorkflowRegisterModal.build(
+        String(workflowId),
+        unregisteredUsers,
+        interaction.guild,
+      );
+      await interaction.showModal(modal);
+      return;
+    }
+
+    // 全員登録済みの場合は通常の承認処理を実行
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       await completeApproval(interaction, workflowId);
