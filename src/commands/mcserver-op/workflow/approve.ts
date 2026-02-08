@@ -15,6 +15,7 @@ import { workflowFields } from "@/domain/utils/workflowFields.js";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import { WorkflowRegisterButton } from "@/interaction-handlers/workflow/WorkflowRegisterButton";
+import { WorkflowRejectButton } from "@/interaction-handlers/workflow/WorkflowRejectButton";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
@@ -88,11 +89,13 @@ export class WorkflowApproveCommand extends Command {
       if (unregistered.length > 0) {
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
           WorkflowRegisterButton.build(workflow.id, unregistered),
+          WorkflowRejectButton.build(workflow.id),
         );
         await interaction.editReply({ embeds: [embed], components: [row] });
       } else {
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
           WorkflowApproveButton.build(workflow.id),
+          WorkflowRejectButton.build(workflow.id),
         );
         await interaction.editReply({ embeds: [embed], components: [row] });
       }

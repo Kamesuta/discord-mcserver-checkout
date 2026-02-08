@@ -22,7 +22,7 @@ export class WorkflowApproveButton extends InteractionHandler {
       .setCustomId(
         `approve-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
       )
-      .setLabel("承認を実行")
+      .setLabel("承認して貸し出し")
       .setStyle(ButtonStyle.Success);
   }
 
