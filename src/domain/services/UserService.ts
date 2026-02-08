@@ -101,35 +101,87 @@ class UserService {
   }
 
   /**
-   * サーバーにユーザーを追加
+   * サーバーのサブユーザーをpanelUsersと同期
+   * - panelUsersに含まれるユーザーを全員追加
+   * - panelUsersに含まれないユーザーを削除（user.*権限を持つ管理者は除く）
    * @param serverId サーバーID
-   * @param discordId Discord ID
+   * @param discordIds panelUsersのDiscord IDリスト
    */
-  public async addUserToServer(
+  public async ensureServerUsers(
     serverId: string,
-    discordId: string,
+    discordIds: string[],
   ): Promise<void> {
-    const user = await this.findByDiscordId(discordId);
-    if (!user || !user.registered || !user.email) {
-      throw new Error("ユーザーが見つかりませんでした");
-    }
-    await pterodactylUserService.addUser(serverId, user.email);
-  }
+    try {
+      // 1. 現在のサブユーザー一覧を取得
+      const currentUsers = await pterodactylUserService.listUsers(serverId);
 
-  /**
-   * サーバーからユーザーを削除
-   * @param serverId サーバーID
-   * @param discordId Discord ID
-   */
-  public async removeUserFromServer(
-    serverId: string,
-    discordId: string,
-  ): Promise<void> {
-    const user = await this.findByDiscordId(discordId);
-    if (!user || !user.registered || !user.email) {
-      throw new Error("ユーザーが見つかりませんでした");
+      // 2. panelUsersのメールアドレスを取得
+      const panelUsers = await this.findByDiscordIds(discordIds);
+      const registeredPanelUsers = panelUsers.filter(
+        (u): u is typeof u & { email: string } => u.registered && !!u.email,
+      );
+      const panelEmails = new Set(
+        registeredPanelUsers.map((u) => u.email.toLowerCase()),
+      );
+
+      // 3. 追加すべきユーザーと削除すべきユーザーを判定
+      const currentEmails = new Set(
+        currentUsers.data.map((u) => u.attributes.email.toLowerCase()),
+      );
+
+      // 追加すべきユーザー（panelEmailsにあるが、currentEmailsにない）
+      const toAdd = registeredPanelUsers.filter(
+        (u) => !currentEmails.has(u.email.toLowerCase()),
+      );
+
+      // 削除すべきユーザー（currentEmailsにあるが、panelEmailsにない）
+      // ただし、user.*権限を持つ管理者は除外
+      const toRemove = currentUsers.data.filter((u) => {
+        const email = u.attributes.email.toLowerCase();
+        if (panelEmails.has(email)) return false; // panelUsersは削除しない
+
+        // user.*権限を持つ管理者は削除しない
+        const hasAdminPermission = u.attributes.permissions.some((p) =>
+          p.startsWith("user."),
+        );
+        return !hasAdminPermission;
+      });
+
+      // 4. ユーザーを追加
+      for (const user of toAdd) {
+        try {
+          await pterodactylUserService.addUser(serverId, user.email);
+          logger.info(
+            `サーバー ${serverId} にユーザー ${user.email} を追加しました`,
+          );
+        } catch (error) {
+          logger.error(`ユーザー ${user.email} の追加に失敗:`, error);
+          // 継続
+        }
+      }
+
+      // 5. ユーザーを削除
+      for (const user of toRemove) {
+        try {
+          await pterodactylUserService.removeUser(
+            serverId,
+            user.attributes.email,
+          );
+          logger.info(
+            `サーバー ${serverId} からユーザー ${user.attributes.email} を削除しました`,
+          );
+        } catch (error) {
+          logger.error(
+            `ユーザー ${user.attributes.email} の削除に失敗:`,
+            error,
+          );
+          // 継続
+        }
+      }
+    } catch (error) {
+      logger.error(`サーバー ${serverId} のユーザー同期に失敗:`, error);
+      throw error;
     }
-    await pterodactylUserService.removeUser(serverId, user.email);
   }
 }
 

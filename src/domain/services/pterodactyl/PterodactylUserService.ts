@@ -129,9 +129,7 @@ class PterodactylUserService extends PterodactylBaseService {
   public async removeUser(serverId: string, email: string): Promise<void> {
     try {
       // サーバー上のユーザー一覧を取得
-      const users = await this._requestClientApi<ListUsersResponse>(
-        `/servers/${serverId}/users`,
-      );
+      const users = await this.listUsers(serverId);
 
       // メールアドレスからユーザーを検索
       const user = users.data.find((u) => u.attributes.email === email);
@@ -151,6 +149,25 @@ class PterodactylUserService extends PterodactylBaseService {
       );
     } catch (error) {
       logger.error(`ユーザー ${email} の削除中にエラーが発生しました:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのサブユーザー一覧を取得
+   * @param serverId サーバーID
+   * @returns サブユーザーの一覧
+   */
+  public async listUsers(serverId: string): Promise<ListUsersResponse> {
+    try {
+      return await this._requestClientApi<ListUsersResponse>(
+        `/servers/${serverId}/users`,
+      );
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のユーザー一覧取得中にエラーが発生しました:`,
+        error,
+      );
       throw error;
     }
   }

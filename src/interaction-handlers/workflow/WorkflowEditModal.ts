@@ -5,6 +5,7 @@ import {
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
+import { userService } from "@/domain/services/UserService";
 import type {
   BaseWorkflowParams,
   WorkflowWithUsers,
@@ -63,6 +64,15 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
         id: workflowId,
         ...fields,
       });
+
+      // ACTIVE状態でサーバーが割り当てられている場合、サブユーザーを同期
+      if (workflow.status === WorkflowStatus.ACTIVE && workflow.pteroServerId) {
+        const panelUserIds = fields.panelUsers;
+        await userService.ensureServerUsers(
+          workflow.pteroServerId,
+          panelUserIds,
+        );
+      }
 
       // 追加処理
       await this._handleEndDate(workflowId, workflow, fields);

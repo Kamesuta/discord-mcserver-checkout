@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { userService } from "@/domain/services/UserService";
+import { workflowService } from "@/domain/services/WorkflowService";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver", (builder) =>
@@ -28,8 +29,36 @@ export class McServerResetPasswordCommand extends Command {
       }
 
       const newPassword = await userService.resetPassword(interaction.user.id);
+
+      // ユーザーが所属するACTIVEワークフローを検索し、サーバーのサブユーザーを同期
+      const activeWorkflows =
+        await workflowService.findActiveWorkflowsByPanelUser(
+          interaction.user.id,
+        );
+
+      for (const workflow of activeWorkflows) {
+        if (workflow.pteroServerId) {
+          try {
+            const panelUserIds = workflow.panelUsers.map((u) => u.discordId);
+            await userService.ensureServerUsers(
+              workflow.pteroServerId,
+              panelUserIds,
+            );
+          } catch (error) {
+            logger.error(
+              `ワークフロー ${workflow.id} のサーバーユーザー同期に失敗:`,
+              error,
+            );
+            // 継続
+          }
+        }
+      }
+
+      // ユーザーへの返信メッセージを作成
       await interaction.editReply(
-        `パスワードをリセットしました。\nID: \`${pteroUser.username}\`\n新しいパスワード: \`${newPassword}\``,
+        `パスワードをリセットしました。\n` +
+          `ID: \`${pteroUser.username}\`\n` +
+          `新しいパスワード: \`${newPassword}\``,
       );
     } catch (error) {
       logger.error(error);

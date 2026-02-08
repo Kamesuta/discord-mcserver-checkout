@@ -172,6 +172,28 @@ export class WorkflowService {
   }
 
   /**
+   * 指定されたDiscord IDがpanelUsersに含まれるACTIVEワークフローを検索
+   * @param discordId Discord ID
+   * @returns ACTIVEワークフローのリスト
+   */
+  public async findActiveWorkflowsByPanelUser(
+    discordId: string,
+  ): Promise<WorkflowWithUsers[]> {
+    return await prisma.workflow.findMany({
+      where: {
+        status: WorkflowStatus.ACTIVE,
+        pteroServerId: { not: null },
+        panelUsers: {
+          some: { discordId },
+        },
+      },
+      include: {
+        panelUsers: true,
+      },
+    });
+  }
+
+  /**
    * 申請のステータスと割り当て情報を更新する
    * @param params 更新パラメータ
    * @returns 更新された申請情報

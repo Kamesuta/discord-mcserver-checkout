@@ -10,6 +10,7 @@ import { commandMentions } from "@/discord-utils/commands.js";
 import { ProgressTracker } from "@/discord-utils/ProgressTracker";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { userService } from "@/domain/services/UserService";
 import {
   type WorkflowWithUsers,
   workflowService,
@@ -86,6 +87,10 @@ export async function activateWorkflow(
     startDate: now,
     endDate,
   });
+
+  // サーバーのサブユーザーを同期
+  const panelUserIds = workflow.panelUsers.map((u) => u.discordId);
+  await userService.ensureServerUsers(availableServer.pteroId, panelUserIds);
 
   // 通知チャンネルに主催者へ通知
   try {
