@@ -44,14 +44,11 @@ class PterodactylCleanService extends PterodactylBaseService {
   private static readonly _REINSTALL_POLL_TIMEOUT = 300000;
 
   /**
-   * サーバーを停止・全ファイル削除のみに行う（再インストールなし）
+   * 全ファイル削除のみに行う（再インストールなし）
    * 返却時のリセットに使用
    * @param serverId サーバーID
    */
   public async reset(serverId: string): Promise<void> {
-    const stopResult = await pterodactylService.setPowerState(serverId, "stop");
-    await stopResult.wait();
-
     await this._deleteAllFiles(serverId);
   }
 

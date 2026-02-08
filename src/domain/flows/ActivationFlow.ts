@@ -6,6 +6,7 @@ import {
   type ModalSubmitInteraction,
 } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands.js";
+import { ProgressTracker } from "@/discord-utils/ProgressTracker";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import {
@@ -38,7 +39,7 @@ export async function activateWorkflow(
   skipReset: boolean = false,
   notificationMessage: string = "サーバー貸出が承認されました！",
 ): Promise<{ serverName: string; endDate: Date } | null> {
-  // 1. 利用可能なサーバーを検索
+  // 利用可能なサーバーを検索
   const availableServer = await workflowService.findAvailableServer();
   if (!availableServer) {
     await interaction.editReply(
@@ -47,15 +48,32 @@ export async function activateWorkflow(
     return null;
   }
 
-  // 2. サーバーを再インストール（skipReset=false の場合のみ）
+  // 実行するステップを決定
+  type ActivationStep = "reinstall";
+  const steps: ActivationStep[] = [];
+  if (!skipReset) steps.push("reinstall");
+
+  // 進捗トラッカーを初期化
+  const progress = new ProgressTracker<ActivationStep>(
+    interaction,
+    "承認処理中",
+    {
+      reinstall: "サーバーを再インストール",
+    },
+    steps,
+  );
+
+  // サーバーを再インストール（skipReset=false の場合のみ）
   if (!skipReset) {
-    await pterodactylCleanService.reinstall(
-      availableServer.pteroId,
-      workflow.mcVersion ?? "",
-    );
+    await progress.execute("reinstall", async () => {
+      await pterodactylCleanService.reinstall(
+        availableServer.pteroId,
+        workflow.mcVersion ?? "",
+      );
+    });
   }
 
-  // 3. ステータスを ACTIVE に更新
+  // ステータスを ACTIVE に更新
   const now = new Date();
   const endDate = new Date(
     now.getTime() + workflow.periodDays * 24 * 60 * 60 * 1000,
@@ -68,7 +86,7 @@ export async function activateWorkflow(
     endDate,
   });
 
-  // 4. 通知チャンネルに主催者へ通知
+  // 通知チャンネルに主催者へ通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,

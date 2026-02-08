@@ -4,6 +4,7 @@ import {
   type ButtonInteraction,
   EmbedBuilder,
 } from "discord.js";
+import { ProgressTracker } from "@/discord-utils/ProgressTracker";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
@@ -15,6 +16,7 @@ import type { Workflow } from "@/generated/prisma/client";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
 import env from "@/utils/env";
+import { pterodactylService } from "../services/pterodactyl/PterodactylService.js";
 import { workflowFields } from "../utils/workflowFields.js";
 
 /**
@@ -67,23 +69,57 @@ export async function completeReturn(
     mcVersion: workflow.mcVersion ?? undefined,
   });
 
-  // 1. バックアップアーカイブ（skipArchive=false の場合のみ）
-  if (!skipArchive) {
-    await archiveService.archiveBackup(serverId, archiveName, "★");
-  }
+  // 実行するステップを決定
+  type ReturnStep = "stop" | "archive" | "reset";
+  const steps: ReturnStep[] = [];
+  if (!skipReset) steps.push("stop");
+  if (!skipArchive) steps.push("archive");
+  if (!skipReset) steps.push("reset");
 
-  // 2. サーバーリセット（全ファイル削除・reinstallなし）（skipReset=false の場合のみ）
+  // 進捗トラッカーを初期化
+  const progress = new ProgressTracker<ReturnStep>(
+    interaction,
+    "返却処理中",
+    {
+      stop: "サーバーを停止",
+      archive: "バックアップアーカイブ",
+      reset: "サーバーリセット",
+    },
+    steps,
+  );
+
+  // サーバーを停止
   if (!skipReset) {
-    await pterodactylCleanService.reset(serverId);
+    await progress.execute("stop", async () => {
+      const stopResult = await pterodactylService.setPowerState(
+        serverId,
+        "stop",
+      );
+      await stopResult.wait();
+    });
   }
 
-  // 3. ステータスを RETURNED に更新
+  // バックアップアーカイブ（skipArchive=false の場合のみ）
+  if (!skipArchive) {
+    await progress.execute("archive", async () => {
+      await archiveService.archiveBackup(serverId, archiveName, "★");
+    });
+  }
+
+  // サーバーリセット（全ファイル削除・reinstallなし）（skipReset=false の場合のみ）
+  if (!skipReset) {
+    await progress.execute("reset", async () => {
+      await pterodactylCleanService.reset(serverId);
+    });
+  }
+
+  // ステータスを RETURNED に更新
   await workflowService.updateStatus({
     id: workflow.id,
     status: WorkflowStatus.RETURNED,
   });
 
-  // 4. 通知チャンネルに主催者へ返却通知
+  // 通知チャンネルに主催者へ返却通知
   try {
     const channel = await interaction.client.channels.fetch(
       env.DISCORD_NOTIFY_CHANNEL_ID,
