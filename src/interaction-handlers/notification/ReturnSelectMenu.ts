@@ -10,6 +10,7 @@ import {
   MessageFlags,
   type StringSelectMenuInteraction,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -66,8 +67,14 @@ export class ReturnSelectMenu extends InteractionHandler {
         return;
       }
 
+      // /mcserver-op が使える人は全サーバーの返却ボタンを押せる
+      const isAdmin =
+        interaction.inCachedGuild() &&
+        (await commandMentions.mcserverOp.checkPermission(interaction.member));
+
       // 権限チェック
       if (
+        !isAdmin &&
         workflow.organizerDiscordId !== interaction.user.id &&
         !workflow.panelUsers.some((u) => u.discordId === interaction.user.id)
       ) {

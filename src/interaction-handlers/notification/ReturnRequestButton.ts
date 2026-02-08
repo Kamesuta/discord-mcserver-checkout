@@ -12,6 +12,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -49,8 +50,14 @@ export class ReturnRequestButton extends InteractionHandler {
         WorkflowStatus.ACTIVE,
       );
 
+      // /mcserver-op が使える人は全サーバーの返却ボタンを押せる
+      const isAdmin =
+        interaction.inCachedGuild() &&
+        (await commandMentions.mcserverOp.checkPermission(interaction.member));
+
+      // ユーザーが主催者のACTIVE申請を取得
       const userWorkflows = workflows.filter(
-        (wf) => wf.organizerDiscordId === interaction.user.id,
+        (wf) => isAdmin || wf.organizerDiscordId === interaction.user.id,
       );
 
       if (userWorkflows.length === 0) {
