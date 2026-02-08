@@ -268,7 +268,7 @@ class PterodactylBackupService extends PterodactylBaseService {
   public async toggleLock(serverId: string, backupUuid: string): Promise<void> {
     try {
       await this._requestClientApi(
-        `/servers/${serverId}/backups/${backupUuid}/toggle-lock`,
+        `/servers/${serverId}/backups/${backupUuid}/lock`,
         {
           method: "POST",
         },
