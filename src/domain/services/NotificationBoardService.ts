@@ -1,5 +1,9 @@
 import type { SapphireClient } from "@sapphire/framework";
-import type { APIMessageTopLevelComponent, JSONEncodable } from "discord.js";
+import type {
+  APIMessageTopLevelComponent,
+  BaseMessageOptions,
+  JSONEncodable,
+} from "discord.js";
 import {
   ComponentType,
   ContainerBuilder,
@@ -70,10 +74,11 @@ class NotificationBoardService {
   /**
    * ボードの表示内容を生成
    */
-  private async _buildBoardContent(): Promise<{
-    components: JSONEncodable<APIMessageTopLevelComponent>[];
-    flags: number;
-  }> {
+  private async _buildBoardContent(): Promise<
+    BaseMessageOptions & {
+      flags: number;
+    }
+  > {
     const components: JSONEncodable<APIMessageTopLevelComponent>[] = [];
 
     // タイトル
@@ -119,6 +124,10 @@ class NotificationBoardService {
     return {
       components,
       flags: MessageFlags.IsComponentsV2 | MessageFlags.SuppressNotifications, // 通知を抑制
+      allowedMentions: {
+        // 通知を抑制
+        parse: [],
+      },
     };
   }
 
