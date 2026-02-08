@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder, MessageFlags } from "discord.js";
+import { GanttChart } from "@/discord-utils/GanttChart";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -32,6 +33,16 @@ export class CheckoutListCommand extends Command {
         .setColor(0x3498db);
       const servers: string[] = [];
 
+      // ガントチャートの表示期間を設定（過去4日〜未来12日）
+      const today = new Date();
+      const startRange = new Date(today);
+      startRange.setDate(startRange.getDate() - 4);
+      const endRange = new Date(today);
+      endRange.setDate(endRange.getDate() + 12);
+
+      const ganttChart = new GanttChart(startRange, endRange, today);
+      let hasGanttData = false;
+
       for (const wf of workflows) {
         // サーバーのバインディング名を取得
         const serverName = wf.pteroServerId
@@ -44,11 +55,30 @@ export class CheckoutListCommand extends Command {
         servers.push(
           `- ${serverName}: ${endDateText}「${wf.name}」(ID:${wf.id},主催:<@${wf.organizerDiscordId}>)`,
         );
+
+        // ガントチャート用データを追加
+        if (wf.startDate && wf.endDate && serverName) {
+          ganttChart.addTask({
+            id: wf.id.toString(),
+            name: serverName,
+            start: wf.startDate,
+            end: wf.endDate,
+          });
+          hasGanttData = true;
+        }
       }
 
       embed.setDescription(servers.join("\n"));
 
-      await interaction.editReply({ embeds: [embed] });
+      // ガントチャートをレンダリング
+      const ganttChartText = hasGanttData
+        ? `\`\`\`\n${ganttChart.render()}\`\`\``
+        : undefined;
+
+      await interaction.editReply({
+        embeds: [embed],
+        content: ganttChartText,
+      });
     } catch (error) {
       logger.error(error);
       const message =
