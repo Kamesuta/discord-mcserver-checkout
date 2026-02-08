@@ -1,7 +1,8 @@
 import {
   ActionRowBuilder,
-  type ButtonBuilder,
+  ButtonBuilder,
   type ButtonInteraction,
+  ButtonStyle,
   EmbedBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
@@ -106,11 +107,22 @@ export async function activateWorkflow(
 
       const resetPasswordMention =
         commandMentions.mcserverResetPassword.resolve(interaction.guildId);
+      const tutorialLinkButton = new ButtonBuilder()
+        .setLabel("鯖管理パネルの詳しい使い方はこちら")
+        .setStyle(ButtonStyle.Link)
+        .setURL(
+          "https://kamepowerworld.notion.site/Pterodactyl-bfd3f603523b47b5b19dfd785fd45841?source=copy_link",
+        );
       await channel.send({
         content:
           `<@${workflow.organizerDiscordId}> サーバー貸し出しが承認されました！\n` +
-          `${resetPasswordMention} からパスワードをリセット後、鯖管理パネルにログインできます！`,
+          `${resetPasswordMention} からパスワードをリセット後、鯖管理パネルにログインできます！\n`,
         embeds: [embed],
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            tutorialLinkButton,
+          ),
+        ],
       });
     }
   } catch (error) {
