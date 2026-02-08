@@ -4,7 +4,6 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
-import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import type {
   BaseWorkflowParams,
@@ -60,7 +59,7 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
       }
 
       // 基本フィールドを更新
-      const { newPanelUsers } = await workflowService.update({
+      await workflowService.update({
         id: workflowId,
         ...fields,
       });
@@ -70,12 +69,6 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
 
       await interaction.editReply(
         `申請 (ID: \`${workflowId}\`) を編集しました。`,
-      );
-
-      await notifyNewPanelUsers(
-        interaction.client,
-        newPanelUsers,
-        interaction.guild,
       );
 
       // 全部確認ボードを更新

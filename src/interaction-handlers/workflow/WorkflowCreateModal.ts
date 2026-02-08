@@ -4,7 +4,6 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
-import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -48,7 +47,7 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
     }
 
     try {
-      const { workflow, newPanelUsers } = await workflowService.create({
+      const { workflow } = await workflowService.create({
         ...fields,
         applicantDiscordId: interaction.user.id,
         organizerDiscordId: organizerId,
@@ -57,12 +56,6 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
       await interaction.editReply({
         content: `申請を受け付けました！\n申請ID: \`${workflow.id}\`\n管理者の承認をお待ちください。`,
       });
-
-      await notifyNewPanelUsers(
-        interaction.client,
-        newPanelUsers,
-        interaction.guild,
-      );
 
       // 全部確認ボードを更新
       await notificationBoardService.updateBoard(interaction.client);
