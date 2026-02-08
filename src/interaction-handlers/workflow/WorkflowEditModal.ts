@@ -5,6 +5,7 @@ import {
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
 import { notifyNewPanelUsers } from "@/domain/flows/NotifyNewPanelUsers";
+import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import type {
   BaseWorkflowParams,
   WorkflowWithUsers,
@@ -76,6 +77,9 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
         newPanelUsers,
         interaction.guild,
       );
+
+      // 全部確認ボードを更新
+      await notificationBoardService.updateBoard(interaction.client);
     } catch (error) {
       logger.error("申請編集中にエラーが発生しました:", error);
       await interaction.editReply("申請の編集中にエラーが発生しました。");

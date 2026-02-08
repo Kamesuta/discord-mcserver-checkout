@@ -9,6 +9,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
@@ -63,6 +64,9 @@ export class ExtendButton extends InteractionHandler {
       );
 
       await workflowService.updateEndDate(workflowId, newEndDate);
+
+      // 全部確認ボードを更新
+      await notificationBoardService.updateBoard(interaction.client);
 
       await interaction.editReply(
         `期限 (ID: ${workflowId}) を1週間延長しました。\n` +

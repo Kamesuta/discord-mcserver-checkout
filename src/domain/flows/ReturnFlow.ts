@@ -1,6 +1,7 @@
 import { type ButtonInteraction, EmbedBuilder } from "discord.js";
 import { ArchiveName } from "@/domain/services/ArchiveName";
 import { archiveService } from "@/domain/services/ArchiveService";
+import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -93,6 +94,9 @@ export async function completeReturn(
     // 通知送信失敗は無視（ログには記録される）
     console.error("Failed to send return notification:", error);
   }
+
+  // 全部確認ボードを更新
+  await notificationBoardService.updateBoard(interaction.client);
 
   const statusParts = [
     !skipArchive && "アーカイブ済み",

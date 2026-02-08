@@ -6,6 +6,7 @@ import {
   type ModalSubmitInteraction,
 } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands.js";
+import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import {
   type WorkflowWithUsers,
@@ -98,6 +99,9 @@ export async function activateWorkflow(
     // 通知送信失敗は無視（ログには記録される）
     logger.error("Failed to send activation notification:", error);
   }
+
+  // 全部確認ボードを更新
+  await notificationBoardService.updateBoard(interaction.client);
 
   return { serverName: availableServer.name, endDate };
 }
