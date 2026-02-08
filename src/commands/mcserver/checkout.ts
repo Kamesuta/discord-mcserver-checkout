@@ -20,7 +20,7 @@ export class McServerCheckoutCommand extends Command {
       interaction.options.getUser("organizer") ?? interaction.user;
 
     const modal = WorkflowCreateModal.build(organizer.id, {
-      panelUsers: [interaction.user.id],
+      panelUsers: [organizer.id],
     });
 
     await interaction.showModal(modal);

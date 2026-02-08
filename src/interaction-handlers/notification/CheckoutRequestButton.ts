@@ -31,7 +31,9 @@ export class CheckoutRequestButton extends InteractionHandler {
 
   public override async run(interaction: ButtonInteraction) {
     // 申請者自身を主催者としてモーダルを表示
-    const modal = WorkflowCreateModal.build(interaction.user.id);
+    const modal = WorkflowCreateModal.build(interaction.user.id, {
+      panelUsers: [interaction.user.id],
+    });
     await interaction.showModal(modal);
   }
 }

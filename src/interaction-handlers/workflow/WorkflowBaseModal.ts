@@ -15,8 +15,6 @@ import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 export interface CheckoutModalDefaults {
   /** サーバーの用途/企画名 */
   name?: string;
-  /** 貸出希望期間（日数） */
-  period?: string;
   /** Minecraft バージョン */
   mcVersion?: string;
   /** パネル権限付与対象ユーザーの Discord ユーザーID一覧 */
@@ -62,24 +60,6 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
           "日付␣企画名 の形式で入力 (スペース区切りで日付と企画名を記載)",
         )
         .setTextInputComponent(nameInput),
-    );
-
-    const periodInput = new TextInputBuilder()
-      .setCustomId("period")
-      .setStyle(TextInputStyle.Short)
-      .setPlaceholder("例: 30")
-      .setRequired(true);
-    if (defaults?.period) {
-      periodInput.setValue(defaults.period);
-    }
-
-    modal.addLabelComponents(
-      new LabelBuilder()
-        .setLabel("貸出希望期間 (日数)")
-        .setDescription(
-          "イベント準備用の場合、イベントまでの日数を入力してください",
-        )
-        .setTextInputComponent(periodInput),
     );
 
     const mcVersionInput = new TextInputBuilder()
@@ -205,7 +185,6 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     const nameInput = interaction.fields.getTextInputValue("name");
     const description = interaction.fields.getTextInputValue("description");
     const mcVersion = interaction.fields.getTextInputValue("mc-version");
-    const periodStr = interaction.fields.getTextInputValue("period");
 
     // 日付と企画名をパース
     const { eventDate, name } =
@@ -224,10 +203,26 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
       return null;
     }
 
-    const period = Number.parseInt(periodStr, 10);
-    if (Number.isNaN(period) || period <= 0) {
-      await interaction.editReply("貸出期間は正の整数で入力してください。");
-      return null;
+    // イベント日を元に貸出期間を自動計算
+    let periodDays: number;
+    if (eventDate) {
+      const now = new Date();
+      const eventDatePlusBuffer = new Date(eventDate);
+      eventDatePlusBuffer.setDate(eventDatePlusBuffer.getDate() + 2);
+      periodDays = Math.ceil(
+        (eventDatePlusBuffer.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
+      );
+
+      // 貸出期間が1日未満の場合はエラー
+      if (periodDays < 1) {
+        await interaction.editReply(
+          "指定されたイベント日付は過去です。将来の日付を入力してください。",
+        );
+        return null;
+      }
+    } else {
+      // イベント日未指定の場合は14日間
+      periodDays = 14;
     }
 
     if (panelUsers.length === 0) {
@@ -241,7 +236,7 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
       name,
       description: description || undefined,
       mcVersion: mcVersion || undefined,
-      periodDays: period,
+      periodDays,
       panelUsers,
       eventDate,
     };

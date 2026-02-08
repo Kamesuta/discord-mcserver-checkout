@@ -49,7 +49,6 @@ export class WorkflowEditCommand extends Command {
 
     const modal = WorkflowEditModal.build(workflow.id, {
       name: workflow.name,
-      period: String(workflow.periodDays),
       mcVersion: workflow.mcVersion ?? undefined,
       panelUsers: workflow.panelUsers.map((u) => u.discordId),
       description: workflow.description ?? undefined,
