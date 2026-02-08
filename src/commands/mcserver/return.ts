@@ -1,6 +1,6 @@
 import {
   Command,
-  RegisterSubCommandGroup,
+  RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { createReturnConfirmation } from "@/domain/flows/ReturnFlow";
@@ -9,37 +9,23 @@ import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
-@RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
+@RegisterSubCommand("mcserver", (builder) =>
   builder
     .setName("return")
-    .setDescription("サーバーを返却する")
+    .setDescription("自分のサーバーを返却する（主催者のみ）")
     .addIntegerOption((option) =>
       option
         .setName("id")
         .setDescription("申請ID")
         .setRequired(true)
         .setAutocomplete(true),
-    )
-    .addBooleanOption((option) =>
-      option
-        .setName("skip-reset")
-        .setDescription("サーバーリセット（全ファイル削除）をスキップする")
-        .setRequired(false),
-    )
-    .addBooleanOption((option) =>
-      option
-        .setName("skip-archive")
-        .setDescription("アーカイブ処理をスキップする")
-        .setRequired(false),
     ),
 )
-export class CheckoutReturnCommand extends Command {
+export class McServerReturnCommand extends Command {
   public override async chatInputRun(
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const id = interaction.options.getInteger("id", true);
-    const skipReset = interaction.options.getBoolean("skip-reset") ?? false;
-    const skipArchive = interaction.options.getBoolean("skip-archive") ?? false;
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
@@ -59,6 +45,18 @@ export class CheckoutReturnCommand extends Command {
         return;
       }
 
+      // 主催者チェック
+      if (workflow.organizerDiscordId !== interaction.user.id) {
+        await interaction.editReply(
+          "この申請を返却する権限がありません。\n（主催者のみが返却できます）",
+        );
+        return;
+      }
+
+      // デフォルトではスキップしない
+      const skipReset = false;
+      const skipArchive = false;
+
       // 共通の返却確認Embed・ボタンを作成
       const { embed, row } = await createReturnConfirmation(
         workflow,
@@ -77,6 +75,9 @@ export class CheckoutReturnCommand extends Command {
   public override async autocompleteRun(
     interaction: Command.AutocompleteInteraction,
   ) {
-    await workflowAutocomplete(interaction, [WorkflowStatus.ACTIVE]);
+    // 自分が主催者のACTIVE申請のみを表示
+    await workflowAutocomplete(interaction, [WorkflowStatus.ACTIVE], {
+      organizerOnly: true,
+    });
   }
 }

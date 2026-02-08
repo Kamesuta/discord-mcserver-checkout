@@ -8,18 +8,30 @@ import { logger } from "@/utils/log";
  *
  * @param interaction オートコンプリートインタラクション
  * @param statuses フィルタリングするワークフローステータス（指定しない場合は全ステータス）
+ * @param options 追加のフィルタリングオプション
+ * @param options.organizerOnly trueの場合、自分が主催者の申請のみを表示
  */
 export async function workflowAutocomplete(
   interaction: AutocompleteInteraction,
   statuses?: WorkflowStatus[],
+  options?: {
+    organizerOnly?: boolean;
+  },
 ): Promise<void> {
   try {
     const focusedValue = interaction.options.getFocused().toString();
 
     // データベースからワークフローを取得
-    const workflows = statuses
+    let workflows = statuses
       ? await workflowService.findByStatuses(statuses)
       : await workflowService.findAll();
+
+    // 主催者フィルター
+    if (options?.organizerOnly) {
+      workflows = workflows.filter(
+        (wf) => wf.organizerDiscordId === interaction.user.id,
+      );
+    }
 
     // 入力値でフィルタリング（IDまたは企画名で検索）
     const filtered = workflows
