@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { userService } from "@/domain/services/UserService";
 import env from "@/utils/env.js";
 import { logger } from "@/utils/log";
@@ -44,8 +45,10 @@ export class UserRegisterCommand extends Command {
         env.DISCORD_NOTIFY_CHANNEL_ID,
       );
       if (channel?.isSendable()) {
+        const resetPasswordMention =
+          commandMentions.mcserverResetPassword.resolve(interaction.guildId);
         await channel.send(
-          `<@${user.id}> 鯖管理パネルのアカウントが用意できました！\n/mcserver reset-password でパスワードをリセットしてからログインしてください！`,
+          `<@${user.id}> 鯖管理パネルのアカウントが用意できました！\n${resetPasswordMention} でパスワードをリセットしてからログインしてください！`,
         );
       }
     } catch (error) {

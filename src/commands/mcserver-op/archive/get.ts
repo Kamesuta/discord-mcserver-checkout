@@ -3,6 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder, MessageFlags } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -15,7 +16,9 @@ import { logger } from "@/utils/log";
     .addIntegerOption((option) =>
       option
         .setName("id")
-        .setDescription("企画ID（/mcserver_admin archive listで確認）")
+        .setDescription(
+          `企画ID（${commandMentions.mcserverOpArchiveList.text()}で確認）`,
+        )
         .setRequired(true)
         .setAutocomplete(true),
     ),
@@ -35,9 +38,11 @@ export class ArchiveGetCommand extends Command {
       );
 
       if (!targetFolder) {
+        const listCommandMention =
+          commandMentions.mcserverOpArchiveList.resolve(interaction.guildId);
         await interaction.editReply(
           `企画ID ${workflowId} のアーカイブが見つかりませんでした。\n` +
-            "`/mcserver_admin archive list` で一覧を確認してください。",
+            `${listCommandMention} で一覧を確認してください。`,
         );
         return;
       }
@@ -80,10 +85,13 @@ export class ArchiveGetCommand extends Command {
       logger.error(error);
       const message =
         error instanceof Error ? error.message : "不明なエラーが発生しました";
+      const listCommandMention = commandMentions.mcserverOpArchiveList.resolve(
+        interaction.guildId,
+      );
       await interaction.editReply(
         `共有リンクの取得に失敗しました: ${message}\n\n` +
           `企画IDが正しいか確認してください。\n` +
-          `\`/mcserver_admin archive list\` で一覧を確認できます。`,
+          `${listCommandMention} で一覧を確認できます。`,
       );
     }
   }

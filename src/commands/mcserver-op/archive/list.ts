@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { PaginatedFieldMessageEmbed } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { logger } from "@/utils/log";
 
@@ -41,13 +42,16 @@ export class ArchiveListCommand extends Command {
       }
 
       // PaginatedMessageを使用してページング
+      const getCommandMention = commandMentions.mcserverOpArchiveGet.resolve(
+        interaction.guildId,
+      );
       const paginatedMessage = new PaginatedFieldMessageEmbed()
         .setTemplate({
           color: 0x95a5a6,
           title: "アーカイブ済み企画一覧",
           description:
             `全${parsedFolders.length}件のアーカイブが見つかりました。\n` +
-            "`/mcserver_admin archive get <企画ID>` で共有リンクを取得できます。",
+            `${getCommandMention} で共有リンクを取得できます。`,
         })
         .setTitleField("企画一覧")
         .setItems(

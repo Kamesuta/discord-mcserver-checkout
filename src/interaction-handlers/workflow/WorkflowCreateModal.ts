@@ -57,7 +57,11 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
         content: `申請を受け付けました！\n申請ID: \`${workflow.id}\`\n管理者の承認をお待ちください。`,
       });
 
-      await notifyNewPanelUsers(interaction.client, newPanelUsers);
+      await notifyNewPanelUsers(
+        interaction.client,
+        newPanelUsers,
+        interaction.guild,
+      );
     } catch (error) {
       logger.error("申請作成中にエラーが発生しました:", error);
       await interaction.editReply("申請の保存中にエラーが発生しました。");
