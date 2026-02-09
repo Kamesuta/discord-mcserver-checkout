@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { EmbedBuilder, MessageFlags } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands.js";
+import { ArchiveName } from "@/domain/services/ArchiveName";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -34,7 +35,7 @@ export class ArchiveGetCommand extends Command {
       // 全フォルダを取得して、IDに一致するものを検索
       const folders = await rcloneService.listFolders();
       const targetFolder = folders.find((folder) =>
-        folder.startsWith(`ID${workflowId}_`),
+        ArchiveName.matchesWorkflowId(folder, workflowId),
       );
 
       if (!targetFolder) {
@@ -50,14 +51,12 @@ export class ArchiveGetCommand extends Command {
       const shareLink = await rcloneService.getShareLink(targetFolder);
 
       // フォルダ名から情報を抽出
-      const match = targetFolder.match(
-        /^ID(\d+)_(.+)_(\d{4}-\d{2}-\d{2})_(.+)$/,
-      );
-      const folderInfo = match
+      const archive = ArchiveName.fromFolderName(targetFolder);
+      const folderInfo = archive
         ? {
-            name: match[2],
-            date: match[3],
-            organizer: match[4],
+            name: archive.workflowName,
+            date: archive.eventDate,
+            organizer: archive.organizerName,
           }
         : null;
 

@@ -145,7 +145,7 @@ class ArchiveService {
       );
       await writeFile(localPath, Buffer.from(data));
       // フォルダ名/ 配下にファイルをアップロード
-      await rcloneService.upload(localPath, archiveName.getFolderName());
+      await rcloneService.upload(localPath, archiveName.folderName);
     } finally {
       try {
         await unlink(localPath);

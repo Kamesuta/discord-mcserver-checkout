@@ -1,11 +1,16 @@
 /**
  * バックアップアーカイブのフォルダ名・ファイル名を構築するクラス
  *
- * フォルダ構造: [ID]_YYYYMMdd_企画名_主催者名主催/
+ * フォルダ構造: YYYYMMdd_[ID]_企画名_主催者名主催/
  * ファイル名: YYYYMMdd_HHmmss[_補足].tar.gz
  */
 export class ArchiveName {
-  private _folderName: string;
+  public readonly workflowId: number;
+  public readonly workflowName: string;
+  public readonly organizerName: string;
+  public readonly eventDate: string;
+  public readonly mcVersion?: string;
+  public readonly folderName: string;
 
   constructor(options: {
     workflowId: number;
@@ -23,7 +28,12 @@ export class ArchiveName {
     const sanitizedOrganizerName = this._sanitizePath(options.organizerName);
     const mcVersionPart = options.mcVersion ? `_MC${options.mcVersion}` : "";
 
-    this._folderName = `ID${options.workflowId}_[${sanitizedWorkflowName}]_${dateStr}_${sanitizedOrganizerName}主催${mcVersionPart}`;
+    this.workflowId = options.workflowId;
+    this.workflowName = options.workflowName;
+    this.organizerName = options.organizerName;
+    this.eventDate = dateStr;
+    this.mcVersion = options.mcVersion;
+    this.folderName = `${dateStr}_ID${options.workflowId}_[${sanitizedWorkflowName}]_${sanitizedOrganizerName}主催${mcVersionPart}`;
   }
 
   /**
@@ -41,13 +51,6 @@ export class ArchiveName {
       .filter((char) => char.charCodeAt(0) >= 0x20)
       .join("");
     return sanitized;
-  }
-
-  /**
-   * フォルダ名を取得
-   */
-  getFolderName(): string {
-    return this._folderName;
   }
 
   /**
@@ -72,5 +75,53 @@ export class ArchiveName {
     const hh = String(date.getHours()).padStart(2, "0");
     const mi = String(date.getMinutes()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}_${hh}-${mi}`;
+  }
+
+  /**
+   * フォルダ名からArchiveNameインスタンスを生成する
+   * @param folderName パース対象のフォルダ名
+   * @returns ArchiveNameインスタンス、パースできない場合はundefined
+   */
+  static fromFolderName(folderName: string): ArchiveName | undefined {
+    // 新形式: YYYY-MM-DD_ID[数字]_[企画名]_主催者名主催[_MCバージョン]
+    const match = folderName.match(
+      /^(\d{4}-\d{2}-\d{2})_ID(\d+)_\[(.+?)\]_(.+?)主催(?:_(MC.+))?$/,
+    );
+
+    if (!match) {
+      return undefined;
+    }
+
+    const [
+      ,
+      eventDateStr,
+      workflowIdStr,
+      workflowName,
+      organizerName,
+      mcVersion,
+    ] = match;
+
+    // eventDateStrをDateオブジェクトに変換
+    const [year, month, day] = eventDateStr.split("-").map(Number);
+    const eventDate = new Date(year, month - 1, day);
+
+    return new ArchiveName({
+      workflowId: Number(workflowIdStr),
+      workflowName,
+      organizerName,
+      eventDate,
+      mcVersion: mcVersion || undefined,
+    });
+  }
+
+  /**
+   * フォルダ名が指定されたワークフローIDに一致するかチェックする
+   * @param folderName チェック対象のフォルダ名
+   * @param workflowId ワークフローID
+   * @returns 一致する場合はtrue
+   */
+  static matchesWorkflowId(folderName: string, workflowId: number): boolean {
+    const archive = ArchiveName.fromFolderName(folderName);
+    return archive?.workflowId === workflowId;
   }
 }

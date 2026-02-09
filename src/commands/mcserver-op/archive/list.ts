@@ -5,6 +5,7 @@ import {
 import { PaginatedFieldMessageEmbed } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands.js";
+import { ArchiveName } from "@/domain/services/ArchiveName";
 import { rcloneService } from "@/domain/services/RcloneService";
 import { logger } from "@/utils/log";
 
@@ -20,16 +21,19 @@ export class ArchiveListCommand extends Command {
     try {
       const folders = await rcloneService.listFolders();
 
-      // フォルダ名の形式: ID[ID]_[企画名]_YYYY-MM-DD_[主催者名]主催[_MCバージョン]
+      // フォルダ名の形式: YYYY-MM-DD_ID[ID]_[企画名]_[主催者名]主催[_MCバージョン]
       // パースできたもののみを抽出
       const parsedFolders = folders
         .map((folderName) => {
-          const match = folderName.match(
-            /^ID(\d+)_\[(.+)\]_(\d{4}-\d{2}-\d{2})_(.+)$/,
-          );
-          if (match) {
-            const [, id, name, date, organizer] = match;
-            return { id, name, date, organizer, folderName };
+          const archive = ArchiveName.fromFolderName(folderName);
+          if (archive) {
+            return {
+              id: String(archive.workflowId),
+              name: archive.workflowName,
+              date: archive.eventDate,
+              organizer: archive.organizerName,
+              folderName,
+            };
           }
           return null;
         })
