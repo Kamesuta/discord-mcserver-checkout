@@ -1,5 +1,5 @@
-import semver from "semver";
 import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
+import { pterodactylStartupService } from "@/domain/services/pterodactyl/PterodactylStartupService";
 import { logger } from "@/utils/log";
 import {
   type PendingOperation,
@@ -78,13 +78,18 @@ class PterodactylCleanService extends PterodactylBaseService {
     await this._deleteAllFiles(serverId);
 
     // Docker イメージを決定
-    const dockerImage = this._getJavaImageForMinecraftVersion(mcVersion);
+    const dockerImage =
+      pterodactylStartupService.getJavaImageForMinecraftVersion(mcVersion);
 
     // MC バージョンのスタートアップ変数を設定
-    await this._setStartupVariable(serverId, "MINECRAFT_VERSION", mcVersion);
+    await pterodactylStartupService.setStartupVariable(
+      serverId,
+      "MINECRAFT_VERSION",
+      mcVersion,
+    );
 
     // Docker イメージを設定
-    await this._setDockerImage(serverId, dockerImage);
+    await pterodactylStartupService.setDockerImage(serverId, dockerImage);
 
     // サーバーを再インストール
     const reinstallResult = await this._reinstallServer(serverId);
@@ -121,78 +126,6 @@ class PterodactylCleanService extends PterodactylBaseService {
     } catch (error) {
       logger.error(
         `サーバー ${serverId} のファイル削除中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Minecraft バージョンに基づいて最適な Java Docker イメージを決定する
-   * @param mcVersion Minecraft バージョン (例: 1.20.1)
-   * @returns Docker イメージ名
-   */
-  private _getJavaImageForMinecraftVersion(mcVersion: string): string {
-    const v = semver.coerce(mcVersion);
-    if (!v) {
-      return "ghcr.io/pterodactyl/yolks:java_21";
-    }
-
-    if (semver.satisfies(v, ">=1.20.5"))
-      return "ghcr.io/pterodactyl/yolks:java_21";
-    if (semver.satisfies(v, ">=1.18.0"))
-      return "ghcr.io/pterodactyl/yolks:java_17";
-    if (semver.satisfies(v, ">=1.17.0"))
-      return "ghcr.io/pterodactyl/yolks:java_16";
-    return "ghcr.io/pterodactyl/yolks:java_8";
-  }
-
-  /**
-   * サーバーのスタートアップ変数を設定
-   */
-  private async _setStartupVariable(
-    serverId: string,
-    key: string,
-    value: string,
-  ): Promise<void> {
-    try {
-      await this._requestClientApi(`/servers/${serverId}/startup/variable`, {
-        method: "PUT",
-        body: JSON.stringify({ key, value }),
-      });
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} のスタートアップ変数設定中にエラーが発生しました:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * サーバーの Docker イメージを設定
-   * @param serverId サーバーID
-   * @param image イメージ名
-   */
-  private async _setDockerImage(
-    serverId: string,
-    image: string,
-  ): Promise<void> {
-    try {
-      await this._requestClientApi(
-        `/servers/${serverId}/settings/docker-image`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
-            docker_image: image,
-            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
-          }),
-        },
-      );
-    } catch (error) {
-      logger.error(
-        `サーバー ${serverId} の Docker イメージ設定中にエラーが発生しました:`,
         error,
       );
       throw error;

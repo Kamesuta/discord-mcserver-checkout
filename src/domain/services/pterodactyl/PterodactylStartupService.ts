@@ -1,3 +1,4 @@
+import semver from "semver";
 import { logger } from "@/utils/log";
 import { PterodactylBaseService } from "./PterodactylBaseService.js";
 
@@ -51,6 +52,78 @@ class PterodactylStartupService extends PterodactylBaseService {
         error,
       );
       return undefined;
+    }
+  }
+
+  /**
+   * サーバーのスタートアップ変数を設定
+   * @param serverId サーバーID
+   * @param key 設定する変数のキー（環境変数名）
+   * @param value 設定する値
+   */
+  public async setStartupVariable(
+    serverId: string,
+    key: string,
+    value: string,
+  ): Promise<void> {
+    try {
+      await this._requestClientApi(`/servers/${serverId}/startup/variable`, {
+        method: "PUT",
+        body: JSON.stringify({ key, value }),
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のスタートアップ変数設定中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Minecraft バージョンに基づいて最適な Java Docker イメージを決定する
+   * @param mcVersion Minecraft バージョン (例: 1.20.1)
+   * @returns Docker イメージ名
+   */
+  public getJavaImageForMinecraftVersion(mcVersion: string): string {
+    const v = semver.coerce(mcVersion);
+    if (!v) {
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    }
+
+    if (semver.satisfies(v, ">=1.20.5"))
+      return "ghcr.io/pterodactyl/yolks:java_21";
+    if (semver.satisfies(v, ">=1.18.0"))
+      return "ghcr.io/pterodactyl/yolks:java_17";
+    if (semver.satisfies(v, ">=1.17.0"))
+      return "ghcr.io/pterodactyl/yolks:java_16";
+    return "ghcr.io/pterodactyl/yolks:java_8";
+  }
+
+  /**
+   * サーバーの Docker イメージを設定
+   * @param serverId サーバーID
+   * @param image イメージ名
+   */
+  public async setDockerImage(serverId: string, image: string): Promise<void> {
+    try {
+      await this._requestClientApi(
+        `/servers/${serverId}/settings/docker-image`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+            docker_image: image,
+            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+          }),
+        },
+      );
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} の Docker イメージ設定中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
     }
   }
 
