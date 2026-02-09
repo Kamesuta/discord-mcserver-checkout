@@ -17,7 +17,7 @@ class RcloneService {
   public async upload(localPath: string, remotePath: string): Promise<void> {
     const destination = `${env.RCLONE_BASE_PATH}/${remotePath}`;
     try {
-      await execFileAsync("rclone", ["copy", localPath, destination]);
+      await execFileAsync(env.RCLONE_PATH, ["copy", localPath, destination]);
     } catch (error) {
       logger.error(
         `rclone アップロード失敗 (${localPath} → ${destination}):`,
@@ -33,7 +33,7 @@ class RcloneService {
    */
   public async listFolders(): Promise<string[]> {
     try {
-      const { stdout } = await execFileAsync("rclone", [
+      const { stdout } = await execFileAsync(env.RCLONE_PATH, [
         "lsf",
         "--dirs-only",
         env.RCLONE_BASE_PATH,
@@ -57,7 +57,10 @@ class RcloneService {
   public async getShareLink(remotePath: string): Promise<string> {
     const destination = `${env.RCLONE_BASE_PATH}/${remotePath}`;
     try {
-      const { stdout } = await execFileAsync("rclone", ["link", destination]);
+      const { stdout } = await execFileAsync(env.RCLONE_PATH, [
+        "link",
+        destination,
+      ]);
       return stdout.trim();
     } catch (error) {
       logger.error(`rclone 共有リンク取得失敗 (${destination}):`, error);

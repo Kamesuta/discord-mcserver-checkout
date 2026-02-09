@@ -19,6 +19,8 @@ const env = cleanEnv(process.env, {
 
   /** パネル権限付与対象ユーザーに付与するDiscordロールID */
   DISCORD_PANEL_USER_ROLE_ID: str(),
+  /** rclone実行ファイルのパス */
+  RCLONE_PATH: str({ default: "rclone" }),
   /** rcloneの保存先ベースパス (例: gdrive:/path/to/dir) */
   RCLONE_BASE_PATH: str(),
   /** 通知用チャンネルID */
