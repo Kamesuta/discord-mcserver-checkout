@@ -1,8 +1,8 @@
 /**
  * バックアップアーカイブのフォルダ名・ファイル名を構築するクラス
  *
- * フォルダ構造: YYYYMMdd_[ID]_企画名_主催者名主催/
- * ファイル名: YYYYMMdd_HHmmss[_補足].tar.gz
+ * フォルダ構造: YYYY/YYYY-MM-DD_ID[ID]_[企画名]_主催者名主催/
+ * ファイル名: YYYY-MM-DD_HH-mm[_補足].tar.gz
  */
 export class ArchiveName {
   public readonly workflowId: number;
@@ -33,7 +33,9 @@ export class ArchiveName {
     this.organizerName = options.organizerName;
     this.eventDate = dateStr;
     this.mcVersion = options.mcVersion;
-    this.folderName = `${dateStr}_ID${options.workflowId}_[${sanitizedWorkflowName}]_${sanitizedOrganizerName}主催${mcVersionPart}`;
+
+    const folderNameWithoutYear = `${dateStr}_ID${options.workflowId}_[${sanitizedWorkflowName}]_${sanitizedOrganizerName}主催${mcVersionPart}`;
+    this.folderName = `${yyyy}/${folderNameWithoutYear}`;
   }
 
   /**
@@ -79,13 +81,13 @@ export class ArchiveName {
 
   /**
    * フォルダ名からArchiveNameインスタンスを生成する
-   * @param folderName パース対象のフォルダ名
+   * @param folderName パース対象のフォルダ名（YYYY/YYYY-MM-DD_ID...形式）
    * @returns ArchiveNameインスタンス、パースできない場合はundefined
    */
   static fromFolderName(folderName: string): ArchiveName | undefined {
-    // 新形式: YYYY-MM-DD_ID[数字]_[企画名]_主催者名主催[_MCバージョン]
+    // 新形式: YYYY/YYYY-MM-DD_ID[数字]_[企画名]_主催者名主催[_MCバージョン]
     const match = folderName.match(
-      /^(\d{4}-\d{2}-\d{2})_ID(\d+)_\[(.+?)\]_(.+?)主催(?:_(MC.+))?$/,
+      /^(\d{4})\/(\d{4}-\d{2}-\d{2})_ID(\d+)_\[(.+?)\]_(.+?)主催(?:_(MC.+))?$/,
     );
 
     if (!match) {
@@ -93,6 +95,7 @@ export class ArchiveName {
     }
 
     const [
+      ,
       ,
       eventDateStr,
       workflowIdStr,

@@ -28,14 +28,15 @@ class RcloneService {
   }
 
   /**
-   * アーカイブフォルダ一覧を取得する
-   * @returns フォルダ名の配列
+   * アーカイブフォルダ一覧を取得する（再帰的）
+   * @returns フォルダパスの配列（例: 2026/2026-02-09_ID16_...）
    */
   public async listFolders(): Promise<string[]> {
     try {
       const { stdout } = await execFileAsync(env.RCLONE_PATH, [
         "lsf",
         "--dirs-only",
+        "--recursive",
         env.RCLONE_BASE_PATH,
       ]);
       return stdout
