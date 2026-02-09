@@ -41,26 +41,33 @@ class ArchiveService {
     // アーカイブ対象のロック済みバックアップ
     const locked = backups.filter((b) => b.attributes.is_locked);
 
-    // 制限に達している場合は一番古いロック済みでないバックアップを削除
-    if (backups.length >= limit) {
-      const oldest = backups
+    // 制限に達している場合は、limit未満になるまで古いロック済みでないバックアップを削除
+    // 新しいバックアップを作成するスペースを確保するため、limit未満にする必要がある
+    const deleteCount = Math.max(0, backups.length - limit + 1);
+
+    if (deleteCount > 0) {
+      // 古い順にソートしたロック済みでないバックアップ
+      const unlocked = backups
         .filter((b) => !b.attributes.is_locked)
         .sort(
           (a, b) =>
             new Date(a.attributes.created_at).getTime() -
             new Date(b.attributes.created_at).getTime(),
-        )[0];
+        );
 
-      if (!oldest) {
+      if (unlocked.length < deleteCount) {
         throw new Error(
           "バックアップ制限に達しており、削除可能なバックアップがありません。",
         );
       }
 
-      await pterodactylBackupService.deleteBackup(
-        serverId,
-        oldest.attributes.uuid,
-      );
+      // 古い順にdeleteCount個削除
+      for (let i = 0; i < deleteCount; i++) {
+        await pterodactylBackupService.deleteBackup(
+          serverId,
+          unlocked[i].attributes.uuid,
+        );
+      }
     }
 
     // 一時バックアップを作成（最新ファイル状態をキャプチャ）
