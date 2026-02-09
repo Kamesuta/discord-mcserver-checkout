@@ -10,6 +10,7 @@ import { archiveService } from "@/domain/services/ArchiveService";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { pterodactylStartupService } from "@/domain/services/pterodactyl/PterodactylStartupService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import type { Workflow } from "@/generated/prisma/client";
@@ -60,13 +61,20 @@ export async function completeReturn(
     }
   }
 
+  // Minecraft バージョンを優先順位に従って取得
+  // 1. version_history.json 2. Pterodactylの起動変数 3. DBのmcVersion 4. undefined
+  const mcVersion = await pterodactylStartupService.getMinecraftVersion(
+    serverId,
+    workflow.mcVersion ?? undefined,
+  );
+
   const eventDate = workflow.eventDate ?? new Date();
   const archiveName = new ArchiveName({
     workflowId: workflow.id,
     workflowName: workflow.name,
     organizerName,
     eventDate,
-    mcVersion: workflow.mcVersion ?? undefined,
+    mcVersion,
   });
 
   // 実行するステップを決定

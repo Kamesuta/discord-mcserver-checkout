@@ -162,4 +162,42 @@ export class PterodactylBaseService {
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   }
+
+  /**
+   * サーバー上のファイル内容を読み取る
+   * @param serverId サーバーID
+   * @param filePath ファイルパス（ルートからの相対パス）
+   * @returns ファイルの内容。読み取れない場合は undefined
+   */
+  protected async _readFileContent(
+    serverId: string,
+    filePath: string,
+  ): Promise<string | undefined> {
+    try {
+      const response = await fetch(
+        `${this._baseUrl}/api/client/servers/${serverId}/files/contents?file=${encodeURIComponent(filePath)}`,
+        {
+          headers: {
+            // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API headers
+            Authorization: `Bearer ${this._apiKey}`,
+            Accept: "text/plain",
+            // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API headers
+            ...this._customHeaders,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      return await response.text();
+    } catch (error) {
+      logger.debug(
+        `サーバー ${serverId} のファイル ${filePath} の読み取りに失敗しました:`,
+        error,
+      );
+      return undefined;
+    }
+  }
 }
