@@ -10,13 +10,14 @@ import { commandMentions } from "@/discord-utils/commands.js";
 import { ProgressTracker } from "@/discord-utils/ProgressTracker";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { userService } from "@/domain/services/UserService";
 import {
   type WorkflowWithUsers,
   workflowService,
 } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
-import { WorkflowStatus } from "@/generated/prisma/client";
+import { type ServerBinding, WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
@@ -33,6 +34,7 @@ type ActivationInteraction = ButtonInteraction | ModalSubmitInteraction;
  * @param workflow ワークフロー（PENDING または作成直後）
  * @param skipReset サーバーをリセットしない場合は true
  * @param notificationMessage 通知メッセージのタイトル（デフォルト: "サーバー貸出が承認されました！"）
+ * @param serverName 指定するサーバー名（省略時は自動割り当て）
  * @returns 割り当てられたサーバー名と終了日、またはエラー時は null
  */
 export async function activateWorkflow(
@@ -40,14 +42,37 @@ export async function activateWorkflow(
   workflow: WorkflowWithUsers,
   skipReset: boolean = false,
   notificationMessage: string = "サーバー貸出が承認されました！",
+  serverName?: string,
 ): Promise<{ serverName: string; endDate: Date } | null> {
-  // 利用可能なサーバーを検索
-  const availableServer = await workflowService.findAvailableServer();
-  if (!availableServer) {
-    await interaction.editReply(
-      "利用可能なサーバーがありません。サーバーバインディングを確認してください。",
-    );
-    return null;
+  // サーバーを取得（指定されている場合は指定サーバー、そうでない場合は自動割り当て）
+  let availableServer: ServerBinding | null;
+  if (serverName) {
+    // 指定されたサーバー名からPterodactyl IDを解決
+    const pteroId = await serverBindingService.getPteroId(serverName);
+    if (!pteroId) {
+      await interaction.editReply(
+        `サーバー名 \`${serverName}\` は登録されていません。`,
+      );
+      return null;
+    }
+    // ServerBindingオブジェクトを取得
+    const servers = await serverBindingService.list();
+    availableServer = servers.find((s) => s.name === serverName);
+    if (!availableServer) {
+      await interaction.editReply(
+        `サーバー \`${serverName}\` が見つかりませんでした。`,
+      );
+      return null;
+    }
+  } else {
+    // 利用可能なサーバーを自動検索
+    availableServer = await workflowService.findAvailableServer();
+    if (!availableServer) {
+      await interaction.editReply(
+        "利用可能なサーバーがありません。サーバーバインディングを確認してください。",
+      );
+      return null;
+    }
   }
 
   // 実行するステップを決定

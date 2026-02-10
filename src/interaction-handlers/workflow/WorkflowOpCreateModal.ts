@@ -27,14 +27,19 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
     organizerId: string,
     applicantId: string,
     skipReset: boolean,
+    serverName?: string,
     defaults?: CheckoutModalDefaults,
   ): ModalBuilder {
+    const params: Record<string, string> = {
+      organizerId,
+      applicantId,
+      skipReset: String(skipReset),
+    };
+    if (serverName) {
+      params.serverName = serverName;
+    }
     return WorkflowBaseCheckoutModal.buildModal(
-      `workflow-create?${new URLSearchParams({
-        organizerId,
-        applicantId,
-        skipReset: String(skipReset),
-      })}`,
+      `workflow-create?${new URLSearchParams(params)}`,
       "サーバー貸出作成（管理者）",
       defaults,
     );
@@ -45,7 +50,7 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
     return this.some();
   }
 
-  // customId: workflow-create?organizerId=...&applicantId=...&skipReset=...
+  // customId: workflow-create?organizerId=...&applicantId=...&skipReset=...&serverName=...
   protected override async execute(
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
@@ -55,6 +60,7 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
     const organizerId = params.get("organizerId");
     const applicantId = params.get("applicantId");
     const skipReset = params.get("skipReset") === "true";
+    const serverName = params.get("serverName") ?? undefined;
 
     if (!organizerId) {
       await interaction.editReply("エラー: 主催者IDが見つかりませんでした。");
@@ -90,6 +96,7 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
         workflow,
         skipReset,
         "サーバー貸出が作成されました！",
+        serverName,
       );
 
       if (result) {
