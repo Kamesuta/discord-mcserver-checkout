@@ -4,6 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { userService } from "@/domain/services/UserService";
 import type {
@@ -27,7 +28,7 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
     defaults?: CheckoutModalDefaults,
   ): ModalBuilder {
     return WorkflowBaseCheckoutModal.buildModal(
-      `edit-modal?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+      `edit-modal?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       "申請編集",
       defaults,
     );
@@ -38,13 +39,15 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
     return this.some();
   }
 
-  // customId: edit-modal?workflowId=...
+  // customId: edit-modal?w=...
   protected override async execute(
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
   ): Promise<void> {
     const [, query] = interaction.customId.split("?");
-    const workflowId = Number(new URLSearchParams(query).get("workflowId"));
+    const workflowId = Number(
+      new URLSearchParams(query).get(customIdParams.workflowId),
+    );
 
     if (Number.isNaN(workflowId)) {
       await interaction.editReply("エラー: 申請IDが見つかりませんでした。");

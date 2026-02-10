@@ -9,6 +9,7 @@ import {
   type ModalBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { activateWorkflow } from "@/domain/flows/ActivationFlow";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -31,12 +32,12 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
     defaults?: CheckoutModalDefaults,
   ): ModalBuilder {
     const params: Record<string, string> = {
-      organizerId,
-      applicantId,
-      skipReset: String(skipReset),
+      [customIdParams.organizerId]: organizerId,
+      [customIdParams.applicantId]: applicantId,
+      [customIdParams.skipReset]: String(skipReset),
     };
     if (serverName) {
-      params.serverName = serverName;
+      params[customIdParams.serverName] = serverName;
     }
     return WorkflowBaseCheckoutModal.buildModal(
       `workflow-create?${new URLSearchParams(params)}`,
@@ -50,17 +51,17 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
     return this.some();
   }
 
-  // customId: workflow-create?organizerId=...&applicantId=...&skipReset=...&serverName=...
+  // customId: workflow-create?o=...&a=...&sr=...&s=...
   protected override async execute(
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
   ): Promise<void> {
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
-    const organizerId = params.get("organizerId");
-    const applicantId = params.get("applicantId");
-    const skipReset = params.get("skipReset") === "true";
-    const serverName = params.get("serverName") ?? undefined;
+    const organizerId = params.get(customIdParams.organizerId);
+    const applicantId = params.get(customIdParams.applicantId);
+    const skipReset = params.get(customIdParams.skipReset) === "true";
+    const serverName = params.get(customIdParams.serverName) ?? undefined;
 
     if (!organizerId) {
       await interaction.editReply("エラー: 主催者IDが見つかりませんでした。");

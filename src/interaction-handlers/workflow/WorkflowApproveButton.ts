@@ -10,6 +10,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowRegisterModal } from "@/interaction-handlers/workflow/WorkflowRegisterModal";
@@ -22,7 +23,7 @@ export class WorkflowApproveButton extends InteractionHandler {
   static build(workflowId: number): ButtonBuilder {
     return new ButtonBuilder()
       .setCustomId(
-        `approve-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+        `approve-button?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
       .setLabel("承認して貸し出し")
       .setStyle(ButtonStyle.Success);
@@ -31,7 +32,7 @@ export class WorkflowApproveButton extends InteractionHandler {
   static buildRetry(workflowId: number): ButtonBuilder {
     return new ButtonBuilder()
       .setCustomId(
-        `approve-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+        `approve-button?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
       .setLabel("再試行")
       .setStyle(ButtonStyle.Primary);
@@ -44,7 +45,9 @@ export class WorkflowApproveButton extends InteractionHandler {
 
   public override async run(interaction: ButtonInteraction) {
     const [, query] = interaction.customId.split("?");
-    const workflowId = Number(new URLSearchParams(query).get("workflowId"));
+    const workflowId = Number(
+      new URLSearchParams(query).get(customIdParams.workflowId),
+    );
 
     // ワークフロー情報を取得
     const workflow = await workflowService.findById(workflowId);

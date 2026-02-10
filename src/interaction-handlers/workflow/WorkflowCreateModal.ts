@@ -4,6 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -22,7 +23,7 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
     defaults?: CheckoutModalDefaults,
   ): ModalBuilder {
     return WorkflowBaseCheckoutModal.buildModal(
-      `checkout-modal?${new URLSearchParams({ organizerId })}`,
+      `checkout-modal?${new URLSearchParams({ [customIdParams.organizerId]: organizerId })}`,
       "サーバー貸出申請",
       defaults,
     );
@@ -33,13 +34,15 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
     return this.some();
   }
 
-  // customId: checkout-modal?organizerId=...
+  // customId: checkout-modal?o=...
   protected override async execute(
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
   ): Promise<void> {
     const [, query] = interaction.customId.split("?");
-    const organizerId = new URLSearchParams(query).get("organizerId");
+    const organizerId = new URLSearchParams(query).get(
+      customIdParams.organizerId,
+    );
 
     if (!organizerId) {
       await interaction.editReply("エラー: 主催者IDが見つかりませんでした。");

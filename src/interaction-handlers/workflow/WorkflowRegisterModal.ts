@@ -12,6 +12,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { userService } from "@/domain/services/UserService";
 import { logger } from "@/utils/log";
@@ -27,7 +28,7 @@ export class WorkflowRegisterModal extends InteractionHandler {
   ): Promise<ModalBuilder> {
     const modal = new ModalBuilder()
       .setCustomId(
-        `register-modal?${new URLSearchParams({ workflowId, users: users.join(",") })}`,
+        `register-modal?${new URLSearchParams({ [customIdParams.workflowId]: workflowId, [customIdParams.users]: users.join(",") })}`,
       )
       .setTitle("パネルユーザー登録");
 
@@ -66,8 +67,10 @@ export class WorkflowRegisterModal extends InteractionHandler {
 
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
-    const workflowId = Number(params.get("workflowId"));
-    const users = (params.get("users") ?? "").split(",").filter(Boolean);
+    const workflowId = Number(params.get(customIdParams.workflowId));
+    const users = (params.get(customIdParams.users) ?? "")
+      .split(",")
+      .filter(Boolean);
 
     try {
       // 各ユーザーを登録

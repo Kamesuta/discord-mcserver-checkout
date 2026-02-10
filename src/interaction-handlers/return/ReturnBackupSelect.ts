@@ -10,6 +10,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { completeReturn } from "@/domain/flows/ReturnFlow";
 import { logger } from "@/utils/log";
 
@@ -25,9 +26,9 @@ export class ReturnConfirmButton extends InteractionHandler {
     return new ButtonBuilder()
       .setCustomId(
         `return-confirm?${new URLSearchParams({
-          workflowId: String(workflowId),
-          skipReset: String(skipReset),
-          skipArchive: String(skipArchive),
+          [customIdParams.workflowId]: String(workflowId),
+          [customIdParams.skipReset]: String(skipReset),
+          [customIdParams.skipArchive]: String(skipArchive),
         })}`,
       )
       .setLabel("返却を実行")
@@ -42,9 +43,9 @@ export class ReturnConfirmButton extends InteractionHandler {
     return new ButtonBuilder()
       .setCustomId(
         `return-confirm?${new URLSearchParams({
-          workflowId: String(workflowId),
-          skipReset: String(skipReset),
-          skipArchive: String(skipArchive),
+          [customIdParams.workflowId]: String(workflowId),
+          [customIdParams.skipReset]: String(skipReset),
+          [customIdParams.skipArchive]: String(skipArchive),
         })}`,
       )
       .setLabel("再試行")
@@ -59,9 +60,9 @@ export class ReturnConfirmButton extends InteractionHandler {
   public override async run(interaction: ButtonInteraction) {
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
-    const workflowId = Number(params.get("workflowId"));
-    const skipReset = params.get("skipReset") === "true";
-    const skipArchive = params.get("skipArchive") === "true";
+    const workflowId = Number(params.get(customIdParams.workflowId));
+    const skipReset = params.get(customIdParams.skipReset) === "true";
+    const skipArchive = params.get(customIdParams.skipArchive) === "true";
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 

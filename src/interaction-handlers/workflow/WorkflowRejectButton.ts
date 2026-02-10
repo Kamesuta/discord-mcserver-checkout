@@ -11,6 +11,7 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
@@ -25,7 +26,7 @@ export class WorkflowRejectButton extends InteractionHandler {
   static build(workflowId: number): ButtonBuilder {
     return new ButtonBuilder()
       .setCustomId(
-        `reject-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+        `reject-button?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
       .setLabel("却下")
       .setStyle(ButtonStyle.Danger);
@@ -34,7 +35,7 @@ export class WorkflowRejectButton extends InteractionHandler {
   static buildRetry(workflowId: number): ButtonBuilder {
     return new ButtonBuilder()
       .setCustomId(
-        `reject-button?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+        `reject-button?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
       .setLabel("再試行")
       .setStyle(ButtonStyle.Primary);
@@ -49,7 +50,9 @@ export class WorkflowRejectButton extends InteractionHandler {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const [, query] = interaction.customId.split("?");
-    const workflowId = Number(new URLSearchParams(query).get("workflowId"));
+    const workflowId = Number(
+      new URLSearchParams(query).get(customIdParams.workflowId),
+    );
 
     try {
       const workflow = await workflowService.findById(workflowId);

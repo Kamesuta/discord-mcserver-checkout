@@ -9,6 +9,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -21,7 +22,7 @@ export class ExtendButton extends InteractionHandler {
   static build(workflowId: number): ButtonBuilder {
     return new ButtonBuilder()
       .setCustomId(
-        `extend-workflow?${new URLSearchParams({ workflowId: String(workflowId) })}`,
+        `extend-workflow?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
       .setLabel("1週間延長")
       .setStyle(ButtonStyle.Primary);
@@ -35,7 +36,7 @@ export class ExtendButton extends InteractionHandler {
   public override async run(interaction: ButtonInteraction) {
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);
-    const workflowId = Number(params.get("workflowId"));
+    const workflowId = Number(params.get(customIdParams.workflowId));
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
