@@ -3,6 +3,7 @@ import {
   ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
+  type Client,
   EmbedBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
@@ -10,6 +11,7 @@ import { commandMentions } from "@/discord-utils/commands.js";
 import { ProgressTracker } from "@/discord-utils/ProgressTracker";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
+import { pterodactylService } from "@/domain/services/pterodactyl/PterodactylService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { userService } from "@/domain/services/UserService";
 import {
@@ -23,6 +25,38 @@ import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
 type ActivationInteraction = ButtonInteraction | ModalSubmitInteraction;
+
+/**
+ * サーバーの設定を更新（サブユーザー同期 + Description更新）
+ * @param client Discordクライアント
+ * @param pteroServerId PterodactylサーバーID
+ * @param organizerDiscordId 主催者のDiscord ID
+ * @param workflowName 企画名
+ * @param panelUserIds パネルユーザーのDiscord IDリスト
+ */
+export async function updateServerSettings(
+  client: Client,
+  pteroServerId: string,
+  organizerDiscordId: string,
+  workflowName: string,
+  panelUserIds: string[],
+): Promise<void> {
+  // サーバーのサブユーザーを同期
+  await userService.ensureServerUsers(pteroServerId, panelUserIds);
+
+  // サーバーのDescriptionを更新
+  try {
+    const organizer = await client.users.fetch(organizerDiscordId);
+    const description = `${organizer.username} ${workflowName}`;
+    await pterodactylService.updateServerDescription(
+      pteroServerId,
+      description,
+    );
+  } catch (error) {
+    // Description更新失敗は無視（ログには記録される）
+    logger.error("Failed to update server description:", error);
+  }
+}
 
 /**
  * ワークフローをアクティブ化する共通処理
@@ -57,7 +91,7 @@ export async function activateWorkflow(
     }
     // ServerBindingオブジェクトを取得
     const servers = await serverBindingService.list();
-    availableServer = servers.find((s) => s.name === serverName);
+    availableServer = servers.find((s) => s.name === serverName) ?? null;
     if (!availableServer) {
       await interaction.editReply(
         `サーバー \`${serverName}\` が見つかりませんでした。`,
@@ -113,9 +147,15 @@ export async function activateWorkflow(
     endDate,
   });
 
-  // サーバーのサブユーザーを同期
+  // サーバーの設定を更新（サブユーザー同期 + Description更新）
   const panelUserIds = workflow.panelUsers.map((u) => u.discordId);
-  await userService.ensureServerUsers(availableServer.pteroId, panelUserIds);
+  await updateServerSettings(
+    interaction.client,
+    availableServer.pteroId,
+    workflow.organizerDiscordId,
+    workflow.name,
+    panelUserIds,
+  );
 
   // 通知チャンネルに主催者へ通知
   try {

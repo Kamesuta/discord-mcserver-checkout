@@ -32,6 +32,20 @@ interface PterodactylServerResources {
 }
 
 /**
+ * Pterodactyl API のサーバー詳細情報のレスポンス型
+ */
+interface PterodactylServerDetails {
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  attributes: {
+    /** サーバー名 */
+    name: string;
+    /** サーバーの説明 */
+    description: string;
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
+}
+
+/**
  * Pterodactyl のサーバー操作を管理するサービスクラス
  */
 class PterodactylService extends PterodactylBaseService {
@@ -106,6 +120,61 @@ class PterodactylService extends PterodactylBaseService {
         return completion;
       },
     };
+  }
+
+  /**
+   * サーバーの詳細情報を取得
+   * @param serverId サーバーID
+   * @returns サーバー名とDescription
+   */
+  public async getServerDetails(serverId: string): Promise<{
+    name: string;
+    description: string;
+  }> {
+    try {
+      const data = await this._requestClientApi<PterodactylServerDetails>(
+        `/servers/${serverId}`,
+      );
+      return {
+        name: data.attributes.name,
+        description: data.attributes.description,
+      };
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} の詳細情報取得中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * サーバーのDescriptionを更新
+   * @param serverId サーバーID
+   * @param description サーバーの説明
+   */
+  public async updateServerDescription(
+    serverId: string,
+    description: string,
+  ): Promise<void> {
+    try {
+      // 現在のサーバー名を取得（nameは必須パラメータのため）
+      const details = await this.getServerDetails(serverId);
+
+      await this._requestClientApi(`/servers/${serverId}/settings/rename`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: details.name,
+          description,
+        }),
+      });
+    } catch (error) {
+      logger.error(
+        `サーバー ${serverId} のDescription更新中にエラーが発生しました:`,
+        error,
+      );
+      throw error;
+    }
   }
 }
 

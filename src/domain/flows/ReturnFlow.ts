@@ -119,6 +119,14 @@ export async function completeReturn(
     await progress.execute("reset", async () => {
       await pterodactylCleanService.reset(serverId);
     });
+
+    // リセット時はDescriptionを「空」にする
+    try {
+      await pterodactylService.updateServerDescription(serverId, "空");
+    } catch (error) {
+      // Description更新失敗は無視（ログには記録される）
+      console.error("Failed to update server description:", error);
+    }
   }
 
   // ステータスを RETURNED に更新

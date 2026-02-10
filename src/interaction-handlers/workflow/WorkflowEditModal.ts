@@ -5,8 +5,8 @@ import {
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
 import { customIdParams } from "@/discord-utils/customIds";
+import { updateServerSettings } from "@/domain/flows/ActivationFlow";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
-import { userService } from "@/domain/services/UserService";
 import type {
   BaseWorkflowParams,
   WorkflowWithUsers,
@@ -68,12 +68,14 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
         ...fields,
       });
 
-      // ACTIVE状態でサーバーが割り当てられている場合、サブユーザーを同期
+      // ACTIVE状態でサーバーが割り当てられている場合、サーバー設定を更新
       if (workflow.status === WorkflowStatus.ACTIVE && workflow.pteroServerId) {
-        const panelUserIds = fields.panelUsers;
-        await userService.ensureServerUsers(
+        await updateServerSettings(
+          interaction.client,
           workflow.pteroServerId,
-          panelUserIds,
+          workflow.organizerDiscordId,
+          fields.name,
+          fields.panelUsers,
         );
       }
 
