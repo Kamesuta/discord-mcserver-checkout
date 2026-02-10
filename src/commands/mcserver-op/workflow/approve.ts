@@ -57,7 +57,8 @@ export class WorkflowApproveCommand extends Command {
         const pteroUser = await userService.findByDiscordId(
           panelUser.discordId,
         );
-        if (!pteroUser) {
+        // ユーザーレコードが存在しない、または registered が false、または username が未設定の場合は未登録
+        if (!pteroUser || !pteroUser.registered || !pteroUser.username) {
           unregistered.push(panelUser.discordId);
         }
       }
