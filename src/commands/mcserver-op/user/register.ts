@@ -15,7 +15,15 @@ import { logger } from "@/utils/log";
     .addStringOption((option) =>
       option
         .setName("username")
-        .setDescription("ニックネーム (半角英数)")
+        .setDescription("Pterodactyl用ID (半角英数)")
+        .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("nickname")
+        .setDescription(
+          "ニックネーム（フォルダ名やPterodactyl説明欄に表示される）",
+        )
         .setRequired(true),
     )
     .addUserOption((option) =>
@@ -30,14 +38,20 @@ export class UserRegisterCommand extends Command {
     interaction: Command.ChatInputCommandInteraction,
   ) {
     const username = interaction.options.getString("username", true);
+    const nickname = interaction.options.getString("nickname", true);
     const user = interaction.options.getUser("user", true);
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
-      await userService.registerUser(username, user.id, interaction.guild);
+      await userService.registerUser(
+        username,
+        nickname,
+        user.id,
+        interaction.guild,
+      );
       await interaction.editReply(
-        `<@${user.id}>を「${username}」として登録しました。`,
+        `<@${user.id}>を「${nickname}」(${username})として登録しました。`,
       );
 
       // チャンネルに通知

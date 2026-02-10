@@ -38,12 +38,14 @@ class UserService {
 
   /**
    * PterodactylにユーザーIDを登録し、DBにも保存し、Discordロールを付与
-   * @param username ニックネーム (半角英数)
+   * @param username Pterodactyl用ID (半角英数)
+   * @param nickname ニックネーム（表示名）
    * @param discordId Discord ID
    * @param guild Discord Guild（ロール付与に使用、nullの場合はスキップ）
    */
   public async registerUser(
     username: string,
+    nickname: string,
     discordId: string,
     guild: Guild | null = null,
   ): Promise<void> {
@@ -58,12 +60,14 @@ class UserService {
         where: { discordId },
         update: {
           username,
+          nickname,
           email,
           registered: true,
         },
         create: {
           discordId,
           username,
+          nickname,
           email,
           registered: true,
         },

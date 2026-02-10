@@ -3,7 +3,6 @@ import {
   ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
-  type Client,
   EmbedBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
@@ -28,14 +27,12 @@ type ActivationInteraction = ButtonInteraction | ModalSubmitInteraction;
 
 /**
  * サーバーの設定を更新（サブユーザー同期 + Description更新）
- * @param client Discordクライアント
  * @param pteroServerId PterodactylサーバーID
  * @param organizerDiscordId 主催者のDiscord ID
  * @param workflowName 企画名
  * @param panelUserIds パネルユーザーのDiscord IDリスト
  */
 export async function updateServerSettings(
-  client: Client,
   pteroServerId: string,
   organizerDiscordId: string,
   workflowName: string,
@@ -46,8 +43,9 @@ export async function updateServerSettings(
 
   // サーバーのDescriptionを更新
   try {
-    const organizer = await client.users.fetch(organizerDiscordId);
-    const description = `${organizer.username} ${workflowName}`;
+    const organizerUser = await userService.findByDiscordId(organizerDiscordId);
+    const organizerName = organizerUser?.nickname ?? organizerDiscordId;
+    const description = `${organizerName} ${workflowName}`;
     await pterodactylService.updateServerDescription(
       pteroServerId,
       description,
@@ -150,7 +148,6 @@ export async function activateWorkflow(
   // サーバーの設定を更新（サブユーザー同期 + Description更新）
   const panelUserIds = workflow.panelUsers.map((u) => u.discordId);
   await updateServerSettings(
-    interaction.client,
     availableServer.pteroId,
     workflow.organizerDiscordId,
     workflow.name,

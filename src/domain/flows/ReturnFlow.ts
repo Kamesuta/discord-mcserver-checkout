@@ -12,6 +12,7 @@ import { pterodactylBackupService } from "@/domain/services/pterodactyl/Pterodac
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import { pterodactylStartupService } from "@/domain/services/pterodactyl/PterodactylStartupService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import type { Workflow } from "@/generated/prisma/client";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -45,21 +46,15 @@ export async function completeReturn(
   }
 
   const serverId = workflow.pteroServerId;
-  const guild = interaction.guild;
 
   // サーバーのバインディング名を取得
   const serverName = await serverBindingService.getName(serverId);
 
   // フォルダ名を構築: [ID]_YYYYMMdd_企画名_[Name]主催
-  let organizerName = workflow.organizerDiscordId;
-  if (guild) {
-    try {
-      const organizer = await guild.members.fetch(workflow.organizerDiscordId);
-      organizerName = organizer.displayName;
-    } catch {
-      // ユーザー情報取得失敗時は Discord ID を使用
-    }
-  }
+  const organizerUser = await userService.findByDiscordId(
+    workflow.organizerDiscordId,
+  );
+  const organizerName = organizerUser?.nickname ?? workflow.organizerDiscordId;
 
   // Minecraft バージョンを優先順位に従って取得
   // 1. version_history.json 2. Pterodactylの起動変数 3. DBのmcVersion 4. undefined

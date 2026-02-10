@@ -65,6 +65,8 @@ model PterodactylUser {
   discordId  String   @id
   /// Pterodactyl ユーザー名
   username   String?  @unique
+  /// ニックネーム（主催者名）
+  nickname   String?
   /// メールアドレス (username@kpw.local)
   email      String?  @unique
   /// Pterodactyl 上にユーザーが作成済みかどうか

@@ -71,7 +71,6 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
       // ACTIVE状態でサーバーが割り当てられている場合、サーバー設定を更新
       if (workflow.status === WorkflowStatus.ACTIVE && workflow.pteroServerId) {
         await updateServerSettings(
-          interaction.client,
           workflow.pteroServerId,
           workflow.organizerDiscordId,
           fields.name,

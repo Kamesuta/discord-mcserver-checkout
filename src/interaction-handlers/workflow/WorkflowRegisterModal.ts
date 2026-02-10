@@ -44,11 +44,14 @@ export class WorkflowRegisterModal extends InteractionHandler {
       modal.addLabelComponents(
         new LabelBuilder()
           .setLabel(`${label} のユーザー名`)
+          .setDescription(
+            "Pterodactyl用ID␣ニックネーム の形式で入力 (スペース区切り)",
+          )
           .setTextInputComponent(
             new TextInputBuilder()
               .setCustomId(`username-${discordId}`)
               .setStyle(TextInputStyle.Short)
-              .setPlaceholder("半角英数のみ")
+              .setPlaceholder("例: kamesuta かめすた")
               .setRequired(true),
           ),
       );
@@ -75,12 +78,29 @@ export class WorkflowRegisterModal extends InteractionHandler {
     try {
       // 各ユーザーを登録
       for (const discordId of users) {
-        const username = interaction.fields
+        const input = interaction.fields
           .getTextInputValue(`username-${discordId}`)
           .trim();
 
+        // スペース区切りでusernameとnicknameを分割
+        const parts = input.split(/\s+/);
+        if (parts.length < 2) {
+          await interaction.editReply(
+            `エラー: <@${discordId}> の入力形式が正しくありません。「Pterodactyl用ID␣ニックネーム」の形式で入力してください。`,
+          );
+          return;
+        }
+
+        const username = parts[0];
+        const nickname = parts.slice(1).join(" ");
+
         // Pterodactylに登録してDBに保存
-        await userService.registerUser(username, discordId, interaction.guild);
+        await userService.registerUser(
+          username,
+          nickname,
+          discordId,
+          interaction.guild,
+        );
       }
 
       // 承認処理を続行
