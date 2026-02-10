@@ -8,6 +8,23 @@ Minecraftサーバーの貸出申請から承認、返却、アーカイブま�
 
 詳細な要件は [spec/要件定義書.md](spec/要件定義書.md) を参照してください。
 
+## 📸 スクリーンショット
+
+### 通知ボード
+承認待ち申請と貸出中サーバー一覧をガントチャート付きで表示
+
+![通知ボード](docs/images/notification-board.png)
+
+### 貸出申請フォーム
+サーバー貸出申請をDiscordのモーダルフォームで受付
+
+![貸出申請フォーム](docs/images/checkout-form.png)
+
+### 申請承認画面
+申請内容を確認して承認処理を実行
+
+![申請承認画面](docs/images/workflow-approval.png)
+
 ## ✨ 主要機能
 
 ### 📝 貸出申請機能
