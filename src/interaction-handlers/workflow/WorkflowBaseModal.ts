@@ -233,9 +233,9 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
         ? (panelUsersField.values as string[])
         : [];
 
-    if (mcVersion && !semver.valid(mcVersion)) {
+    if (mcVersion && !semver.coerce(mcVersion)) {
       await interaction.editReply(
-        "Minecraft バージョンの形式が正しくありません (例: 1.20.1)。空の場合は最新版が適用されます。",
+        "Minecraft バージョンの形式が正しくありません (例: 1.21 または 1.20.1)。空の場合は最新版が適用されます。",
       );
       return null;
     }
