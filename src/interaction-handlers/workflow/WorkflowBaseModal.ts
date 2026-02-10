@@ -115,22 +115,57 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
 
   /**
    * 日付と企画名を解析する
-   * @param input "日付 企画名" 形式の文字列
-   * @returns { eventDate: Date | undefined, name: string }
+   * @param input "日付 企画名" または "日付〜日付 企画名" 形式の文字列
+   * @returns { eventDate: Date | undefined, eventEndDate: Date | undefined, name: string }
    */
   private static _parseNameWithDate(input: string): {
     eventDate?: Date;
+    eventEndDate?: Date;
     name: string;
   } {
     const match = input.match(
-      /^((?:\d{4}[-/])?\d{1,2}[-/]\d{1,2})[\s\u3000]+(.+)$/,
+      /^((?:\d{4}[-/])?\d{1,2}[-/]\d{1,2})(?:[〜～]((?:\d{4}[-/])?\d{1,2}[-/]\d{1,2}))?[\s\u3000]+(.+)$/,
     );
     if (!match) {
       // 日付が含まれていない場合、そのまま企画名として扱う
       return { name: input };
     }
 
-    const [, dateStr, eventName] = match;
+    const [, startDateStr, endDateStr, eventName] = match;
+
+    // 開始日をパース
+    const eventDate = WorkflowBaseCheckoutModal._parseSingleDate(startDateStr);
+    if (!eventDate) {
+      // 無効な日付の場合、企画名として扱う
+      return { name: input };
+    }
+
+    // 終了日が指定されている場合はパース
+    let eventEndDate: Date | undefined;
+    if (endDateStr) {
+      eventEndDate = WorkflowBaseCheckoutModal._parseSingleDate(
+        endDateStr,
+        eventDate.getFullYear(),
+      );
+      if (!eventEndDate) {
+        // 無効な日付の場合、企画名として扱う
+        return { name: input };
+      }
+    }
+
+    return { eventDate, eventEndDate, name: eventName };
+  }
+
+  /**
+   * 単一の日付文字列をパースする
+   * @param dateStr 日付文字列 (MM/DD または YYYY/MM/DD 形式)
+   * @param baseYear 基準年（MM/DD形式の場合に使用）
+   * @returns パースされた Date オブジェクト、失敗時は undefined
+   */
+  private static _parseSingleDate(
+    dateStr: string,
+    baseYear?: number,
+  ): Date | undefined {
     const parts = dateStr.split(/[-/]/);
 
     let year: number;
@@ -142,14 +177,19 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
       month = Number.parseInt(parts[0], 10);
       day = Number.parseInt(parts[1], 10);
 
-      // 今年として解釈
-      const now = new Date();
-      year = now.getFullYear();
+      if (baseYear !== undefined) {
+        // 基準年が指定されている場合はそれを使用
+        year = baseYear;
+      } else {
+        // 今年として解釈
+        const now = new Date();
+        year = now.getFullYear();
 
-      // 過去の日付になる場合、来年にする
-      const eventDate = new Date(year, month - 1, day);
-      if (eventDate < now) {
-        year += 1;
+        // 過去の日付になる場合、来年にする
+        const eventDate = new Date(year, month - 1, day);
+        if (eventDate < now) {
+          year += 1;
+        }
       }
     } else if (parts.length === 3) {
       // YYYY/MM/DD 形式
@@ -157,22 +197,19 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
       month = Number.parseInt(parts[1], 10);
       day = Number.parseInt(parts[2], 10);
     } else {
-      // 不正な形式の場合、企画名として扱う
-      return { name: input };
+      // 不正な形式
+      return undefined;
     }
 
-    const eventDate = new Date(year, month - 1, day);
+    const date = new Date(year, month - 1, day);
 
     // 日付が有効かチェック
-    if (
-      Number.isNaN(eventDate.getTime()) ||
-      eventDate.getMonth() !== month - 1
-    ) {
-      // 無効な日付の場合、企画名として扱う
-      return { name: input };
+    if (Number.isNaN(date.getTime()) || date.getMonth() !== month - 1) {
+      // 無効な日付
+      return undefined;
     }
 
-    return { eventDate, name: eventName };
+    return date;
   }
 
   /**
@@ -187,7 +224,7 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     const mcVersion = interaction.fields.getTextInputValue("mc-version");
 
     // 日付と企画名をパース
-    const { eventDate, name } =
+    const { eventDate, eventEndDate, name } =
       WorkflowBaseCheckoutModal._parseNameWithDate(nameInput);
 
     const panelUsersField = interaction.fields.fields.get("panel-users");
@@ -207,10 +244,12 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     let periodDays: number;
     if (eventDate) {
       const now = new Date();
-      const eventDatePlusBuffer = new Date(eventDate);
-      eventDatePlusBuffer.setDate(eventDatePlusBuffer.getDate() + 2);
+      // 期限の基準日を決定（終了日がある場合は終了日、ない場合は開始日）
+      const baseDate = eventEndDate || eventDate;
+      const deadlineDate = new Date(baseDate);
+      deadlineDate.setDate(deadlineDate.getDate() + 2);
       periodDays = Math.ceil(
-        (eventDatePlusBuffer.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
+        (deadlineDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
       );
 
       // 貸出期間が1日未満の場合はエラー
