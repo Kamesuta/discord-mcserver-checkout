@@ -1,148 +1,165 @@
-# Robust TypeScript Template for Discord.js Bot Development
+# Minecraftサーバー管理BOT
 
-This is a template for building robust and scalable Discord bots using TypeScript and Discord.js.  
-It is fully compatible with VSCode, allowing you to run and debug your bot with ease.  
-The project includes Biome for enforcing code quality, and uses Husky to ensure clean commits.  
-It also features a modular slash command system and optional Prisma integration for database access.
+Minecraftサーバーの貸出申請から承認、返却、アーカイブまでの運用プロセスを自動化・半自動化するDiscord BOTです。
 
-## 🚀 Features
+## 📋 概要
 
-- **Sapphire Framework**
-  Utilizes the power of Sapphire for handling commands, events, and more.
-  Features a file-based command structure for easy organization.
+このBOTは、Minecraftサーバーの貸出管理を行い、運営負荷を大幅に削減します。Discord上で申請を受け付け、Pterodactylパネルと連携してサーバーの割り当て、ユーザー権限管理、バックアップ、返却処理を自動化します。
 
-- **Prisma-ready**  
-  Includes setup for using [Prisma](https://www.prisma.io/) as your ORM with SQL databases.  
-  If you don’t need it, see [Removing Prisma](#removing-prisma) below.
+詳細な要件は [spec/要件定義書.md](spec/要件定義書.md) を参照してください。
 
-- **VSCode Ready**  
-  Comes with launch configurations for debugging directly in VSCode using `F5`.
+## ✨ 主要機能
 
-- **Biome**  
-  Enforces strict code style and formatting. Replaces ESLint and Prettier for faster and more unified tooling.
+### 📝 貸出申請機能
+Discordのフォーム機能を使用してサーバー貸出申請を受け付けます。
 
-- **Husky**  
-  Runs lint and formatting checks before each commit for consistent code quality.
+- 企画名、Minecraftバージョン、貸出期間、主催者、パネルユーザー、開催日を入力
+- 申請情報をデータベースに自動記録
+- 申請受付の自動通知
+- 通知ボードに申請を自動反映
 
-- **Modern ESM Support**  
-  Uses ESM syntax (`import/export`) out of the box.
+### 👤 管理者承認機能
+管理者が申請を承認し、Pterodactylユーザーを作成します。
 
-- **Type-safe Environment Variables**  
-  Uses [envalid](https://github.com/af/envalid) to validate and type-check environment variables.
+- 申請一覧の表示（ステータスフィルタ、ページネーション対応）
+- 未登録ユーザーの自動検出とユーザー登録モーダル表示
+- メールアドレス自動生成（`[username]@kpw.local`形式）
+- Discord IDとPterodactylユーザーの関連付けをDB保存
+- パネルユーザーに専用Discordロールを自動付与
 
-## 📦 Getting Started
+### 🖥️ 自動サーバー割り当て機能
+承認後、利用可能なサーバーを自動で割り当てます。
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Kamesuta/discordjs-typescript-template.git
-   cd discordjs-typescript-template
-   ```
+- 利用可能なサーバーを自動検索
+- パネルユーザーをPterodactylパネルに自動追加
+- サーバー権限を自動付与
+- サーバーDescription自動更新（`[主催者名] [企画名]`）
+- Minecraftバージョン自動判定（version_history.json優先）
+- 接続情報を申請者・主催者・パネルユーザーに自動通知
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### 📊 貸出情報管理機能
+現在の貸出状況を管理・表示します。
 
-3. Set up your environment variables:
-   - Copy the `.env.example` file to `.env` and set your Discord bot token:
-    ```env
-    DISCORD_TOKEN=your_token_here
-    GUILD_ID=your_guild_id_here
-    ```
+- 貸出中サーバー一覧をガントチャート表示
+- 通知ボードでACTIVE申請を一覧表示
+- サーバーステータス確認（CPU、メモリ、ディスク使用量）
+- プログレストラッカーで長時間処理の進捗を可視化
 
-4. Run the bot:
-   ```bash
-   npm run start
-   ```
+### ⏰ 期限管理・リマインド機能
+貸出期限の管理とユーザーへの事前通知を行います。
 
-5. Lint and format with Biome:
-   ```bash
-   npm run lint:fix
-   ```
+- 毎日18時に自動スケジュール実行
+- 期限3日前・1日前に主催者へ自動リマインド通知
+- 通知から1クリックで延長可能なボタン付き
+- 期限延長申請の受付（主催者・管理者）
 
-## 📁 Project Structure
+### 🔧 管理者向けサーバー管理機能
+管理者による柔軟なサーバー管理を可能にします。
 
+- 貸出期限の変更（日付パーサー対応）
+- 即時強制返却の実行
+- サーバー電源操作（start/stop/restart/kill）
+- サーバーリセット・クリーンアップ（全ファイル削除）
+- バックアップ作成・ダウンロード
+- サーバーバインディング管理（サーバー名 ↔ Pterodactyl ID）
+
+### 🔄 自動返却フロー機能
+期限切れサーバーを検出してリマインドし、ワンクリックで返却処理を実行します。
+
+- 毎日18時に期限切れサーバーを自動検出
+- 管理者へリマインド通知
+- 通知から延長または返却を選択可能
+
+### 📦 返却処理機能
+自動返却及び手動返却実行時に呼ばれる共通の返却処理です。
+
+- サーバー自動停止
+- ロック済みバックアップ + 最新状態（一時バックアップ）を両方アーカイブ
+- Google Driveへrcloneで自動アップロード
+- バックアップ命名規則：`企画鯖ワールドデータ/YYYY/YYYY-MM-DD_ID[ID]_[企画名]_[主催者名]主催[_MCバージョン]/`
+- ロック済みバックアップの自動ロック解除
+- サーバーリセット（全ファイル削除）
+- パネルユーザーの権限自動剥奪（管理者除外）
+- 主催者・パネルユーザーへ返却通知
+- アーカイブ・リセットのスキップオプション対応
+
+## 🎯 コマンド一覧
+
+詳細なコマンド仕様は [spec/コマンド.md](spec/コマンド.md) を参照してください。
+
+### 一般ユーザー向けコマンド (`/mcserver`)
+- `checkout` - サーバー貸出申請
+- `return` - 自分のサーバーを返却
+- `extend` - 貸出期限を1週間延長
+- `reset-password` - Pterodactylパスワードをリセット
+
+### 管理者向けコマンド (`/mcserver-op`)
+- `workflow` - 申請管理（list/edit/approve）
+- `checkout` - 貸出管理（create/list/return/extend/server-status）
+- `archive` - アーカイブ管理（list/get）
+- `user` - ユーザー管理（register）
+
+### 管理者向けイレギュラー対応 (`/mcserver-admin`)
+- `server-binding` - サーバーバインディング管理（list/set/unset）
+- `server` - サーバー管理（status/power/backup/clean/description）
+
+## 🏗️ 技術スタック
+
+- **Node.js** 22.x
+- **TypeScript** - 型安全な開発
+- **Discord.js** v14 - Discord BOT開発
+- **Sapphire Framework** - コマンドフレームワーク
+- **Prisma** - ORM（MySQL/MariaDB）
+- **Pterodactyl API** - サーバーパネル操作
+- **rclone** - Google Driveバックアップ
+- **node-schedule** - 定期タスク実行
+
+## 🚀 セットアップ
+
+### 前提条件
+- Node.js 22.x
+- MySQL/MariaDB
+- Pterodactylパネル
+- rclone（Google Drive連携用）
+
+### インストール
+
+```bash
+# 依存関係のインストール
+npm install
+
+# データベースマイグレーション
+npx prisma migrate deploy
+
+# Prismaクライアント生成
+npx prisma generate
+
+# ビルド
+npm run build
+
+# 起動
+npm start
 ```
-prisma/                # Prisma schema and client
-src/
-├── commands/          # 1 file = 1 slash command
-├── utils/               # Utilities (e.g., logging, config)
-└── index.ts           # Bot entry point
+
+### 環境変数
+
+Discord、Database、Pterodactyl、rcloneの各種認証情報を設定してください。詳細は `.env.example` を参照してください。
+
+## 🔧 開発
+
+### コーディング規約
+
+詳細は [AGENTS.md](AGENTS.md) を参照してください。
+
+### 開発コマンド
+
+```bash
+# 開発モード起動
+npm run dev
+
+# ビルド
+npm run build
+
+# Prismaスタジオ起動
+npx prisma studio
 ```
-
-## 🎮 Adding a New Command
-To add a new command to the Discord bot:
-
-1.  Create a new command file in `src/commands/general` (or any other category folder).
-2.  Extend the `Command` class from `@sapphire/framework`.
-3.  Implement the `chatInputRun` method.
-4.  Register the command (Sapphire automatically loads commands from the `commands` directory).
-
-   ```ts
-   // src/commands/general/ping.ts
-   import { ApplyOptions } from '@sapphire/decorators';
-   import { Command } from '@sapphire/framework';
-
-   @ApplyOptions<Command.Options>({
-     description: 'ping pong'
-   })
-   export class UserCommand extends Command {
-     public override registerApplicationCommands(registry: Command.Registry) {
-       registry.registerChatInputCommand((builder) =>
-         builder.setName('ping').setDescription('ping pong')
-       );
-     }
-
-     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-       return interaction.reply({ content: 'Pong!' });
-     }
-   }
-   ```
-3. That's it! The command system will automatically register your new command with Discord when the bot starts.
-   You can now use the command in Discord by typing `/ping`.
-
-## 🌱 Environment Variables
-
-This project uses `envalid` to ensure all required environment variables are present and correctly typed.
-The configuration is located in `src/utils/env.ts`.
-
-To add a new environment variable:
-1. Add the variable to your `.env` file.
-2. Define the validator in `src/utils/env.ts`.
-
-```ts
-// src/utils/env.ts
-import { cleanEnv, str } from "envalid";
-
-export default cleanEnv(process.env, {
-  // ... existing variables
-  NEW_VARIABLE: str(),
-});
-```
-
-## 🗑 Removing Prisma
-
-If you don’t need a database:
-
-1. Remove `src/utils/prisma.ts`, `prisma.config.ts`.
-2. Remove `heroku-postbuild` line from `package.json`.
-3. Uninstall the Prisma packages:
-   ```bash
-   npm uninstall prisma @prisma/client @prisma/adapter-mariadb
-   ```
-
-## 🗄 Using Prisma
-
-If you want to use Prisma:
-
-1. npx prisma init
-2. Edit the `prisma/schema.prisma`, `prisma.config.ts` file to set up your database connection and models.
-3. Add your database connection string to the `.env` file:
-   ```env
-   DATABASE_URL=your_database_connection_string
-   ```
-4. Run the following command to generate the Prisma client and create the initial migration:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   ```

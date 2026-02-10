@@ -1,7 +1,7 @@
 {
-  "name": "discordjs-typescript-template",
+  "name": "discord-mcserver-checkout",
   "version": "1.0.0",
-  "description": "Robust TypeScript Template with ESLint for Discord.js Bot Development.",
+  "description": "単発サーバーの貸し出し管理、バックアップ管理を行います。",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
