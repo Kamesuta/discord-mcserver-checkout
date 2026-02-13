@@ -183,7 +183,8 @@ export async function activateWorkflow(
       await channel.send({
         content:
           `<@${workflow.organizerDiscordId}> サーバー貸し出しが承認されました！\n` +
-          `${resetPasswordMention} からパスワードをリセット後、鯖管理パネルにログインできます！\n`,
+          `下記リンクの手順で管理パネルにログインし、企画の準備をお願いします！\n` +
+          `-# ※管理パネル初回ログイン時は ${resetPasswordMention} でパスワードを発行してください`,
         embeds: [embed],
         components: [
           new ActionRowBuilder<ButtonBuilder>().addComponents(
