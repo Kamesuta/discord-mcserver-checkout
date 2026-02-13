@@ -75,35 +75,38 @@ export class CommandMention {
     const command = await member.guild.commands.fetch(commandId);
     if (!command) return false;
 
-    // デフォルトの権限を持っている場合は許可
-    if (
-      command.defaultMemberPermissions &&
-      member.permissions.has(command.defaultMemberPermissions)
-    ) {
+    // オーバーライド権限を取得
+    const overridePermissions = await command.permissions
+      .fetch({})
+      .catch(() => []);
+    for (const permission of overridePermissions) {
+      // 優先度が高い順にオーバーライドをチェック
+
+      // ロールまたはユーザーの権限が一致するかチェック
+      const matchRole =
+        permission.type === ApplicationCommandPermissionType.Role &&
+        member.roles.cache.has(permission.id);
+      const matchUser =
+        permission.type === ApplicationCommandPermissionType.User &&
+        member.user.id === permission.id;
+
+      // 権限が一致しない場合は次の権限をチェック
+      if (!matchRole && !matchUser) continue;
+
+      // マッチした瞬間に結果確定
+      return permission.permission;
+    }
+
+    // default権限が未設定なら全員許可
+    if (!command.defaultMemberPermissions) {
       return true;
     }
 
-    // 権限を取得
-    const permissions = await command.permissions
-      .fetch({})
-      .catch(() => undefined);
-    if (!permissions) return false;
+    // default権限を持っている場合は許可
+    if (member.permissions.has(command.defaultMemberPermissions)) {
+      return true;
+    }
 
-    // コマンドの権限から許可がある権限設定を探す
-    return permissions.some((permission) => {
-      if (
-        permission.type === ApplicationCommandPermissionType.Role &&
-        member.roles.cache.has(permission.id)
-      ) {
-        return permission.permission;
-      }
-      if (
-        permission.type === ApplicationCommandPermissionType.User &&
-        member.user.id === permission.id
-      ) {
-        return permission.permission;
-      }
-      return false;
-    });
+    return false;
   }
 }
