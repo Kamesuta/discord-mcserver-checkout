@@ -19,7 +19,7 @@ import {
 } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { type ServerBinding, WorkflowStatus } from "@/generated/prisma/client";
-import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
+import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 

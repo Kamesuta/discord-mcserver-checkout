@@ -10,6 +10,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { completeReturn } from "@/domain/flows/ReturnFlow";
 import { logger } from "@/utils/log";
@@ -65,6 +66,15 @@ export class ReturnConfirmButton extends InteractionHandler {
     const skipArchive = params.get(customIdParams.skipArchive) === "true";
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    // /mcserver が使える人のみ返却できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
 
     try {
       await completeReturn(interaction, workflowId, skipReset, skipArchive);

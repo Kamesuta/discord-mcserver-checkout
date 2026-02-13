@@ -5,7 +5,7 @@ import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { ExtendButton } from "@/interaction-handlers/extend/ExtendButton";
+import { ExtendButton } from "@/interaction-handlers/mcserver/ExtendButton";
 import env from "@/utils/env";
 import { sapphireLogger } from "@/utils/log";
 

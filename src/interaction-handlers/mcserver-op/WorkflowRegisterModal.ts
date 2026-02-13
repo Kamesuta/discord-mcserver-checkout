@@ -12,6 +12,7 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { userService } from "@/domain/services/UserService";
@@ -67,6 +68,15 @@ export class WorkflowRegisterModal extends InteractionHandler {
 
   public override async run(interaction: ModalSubmitInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    // /mcserver-op が使える人のみ登録・承認できる
+    const isOp =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserverOp.checkPermission(interaction.member));
+    if (!isOp) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
 
     const [, query] = interaction.customId.split("?");
     const params = new URLSearchParams(query);

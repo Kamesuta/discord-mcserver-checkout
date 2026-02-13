@@ -3,7 +3,7 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { serverBindingAutocomplete } from "@/domain/utils/serverBindingAutocomplete";
-import { WorkflowOpCreateModal } from "@/interaction-handlers/workflow/WorkflowOpCreateModal";
+import { WorkflowOpCreateModal } from "@/interaction-handlers/mcserver-op/WorkflowOpCreateModal";
 
 @RegisterSubCommandGroup("mcserver-op", "checkout", (builder) =>
   builder

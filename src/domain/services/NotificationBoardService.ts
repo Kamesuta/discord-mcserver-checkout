@@ -17,8 +17,8 @@ import { GanttChart } from "@/discord-utils/GanttChart";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { CheckoutRequestButton } from "@/interaction-handlers/notification/CheckoutRequestButton";
-import { ReturnRequestButton } from "@/interaction-handlers/notification/ReturnRequestButton";
+import { CheckoutRequestButton } from "@/interaction-handlers/mcserver/CheckoutRequestButton";
+import { ReturnRequestButton } from "@/interaction-handlers/mcserver/ReturnRequestButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 

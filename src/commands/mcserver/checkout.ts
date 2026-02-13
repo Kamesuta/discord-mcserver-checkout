@@ -2,7 +2,7 @@ import {
   Command,
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
-import { WorkflowCreateModal } from "@/interaction-handlers/workflow/WorkflowCreateModal";
+import { WorkflowCreateModal } from "@/interaction-handlers/mcserver/WorkflowCreateModal";
 
 @RegisterSubCommand("mcserver", (builder) =>
   builder

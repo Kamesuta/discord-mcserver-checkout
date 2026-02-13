@@ -6,7 +6,7 @@ import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { WorkflowEditModal } from "@/interaction-handlers/workflow/WorkflowEditModal";
+import { WorkflowEditModal } from "@/interaction-handlers/mcserver-op/WorkflowEditModal";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>
   builder

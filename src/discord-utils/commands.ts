@@ -5,6 +5,7 @@ import { CommandMention } from "./CommandMention.js";
  * 他のコマンドへメンションする際はここに追記して使うこと
  */
 class CommandMentions {
+  readonly mcserver = new CommandMention("mcserver");
   readonly mcserverCheckout = new CommandMention("mcserver/checkout");
   readonly mcserverResetPassword = new CommandMention(
     "mcserver/reset-password",

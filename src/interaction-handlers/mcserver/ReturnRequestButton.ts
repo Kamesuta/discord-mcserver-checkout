@@ -44,6 +44,15 @@ export class ReturnRequestButton extends InteractionHandler {
   public override async run(interaction: ButtonInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    // /mcserver が使える人のみ返却できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
+
     try {
       // ユーザーが主催者またはパネルユーザーのACTIVE申請を取得
       const workflows = await workflowService.findByStatus(
@@ -51,13 +60,13 @@ export class ReturnRequestButton extends InteractionHandler {
       );
 
       // /mcserver-op が使える人は全サーバーの返却ボタンを押せる
-      const isAdmin =
+      const isOp =
         interaction.inCachedGuild() &&
         (await commandMentions.mcserverOp.checkPermission(interaction.member));
 
       // ユーザーが主催者のACTIVE申請を取得
       const userWorkflows = workflows.filter(
-        (wf) => isAdmin || wf.organizerDiscordId === interaction.user.id,
+        (wf) => isOp || wf.organizerDiscordId === interaction.user.id,
       );
 
       if (userWorkflows.length === 0) {

@@ -18,9 +18,9 @@ import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
-import { WorkflowRegisterButton } from "@/interaction-handlers/workflow/WorkflowRegisterButton";
-import { WorkflowRejectButton } from "@/interaction-handlers/workflow/WorkflowRejectButton";
+import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
+import { WorkflowRegisterButton } from "@/interaction-handlers/mcserver-op/WorkflowRegisterButton";
+import { WorkflowRejectButton } from "@/interaction-handlers/mcserver-op/WorkflowRejectButton";
 import { logger } from "@/utils/log";
 
 /**
@@ -49,12 +49,12 @@ export class WorkflowReviewButton extends InteractionHandler {
   }
 
   public override async run(interaction: ButtonInteraction) {
-    // 管理者権限をチェック
-    const isAdmin =
+    // /mcserver-op が使える人のみ確認できる
+    const isOp =
       interaction.inCachedGuild() &&
       (await commandMentions.mcserverOp.checkPermission(interaction.member));
 
-    if (!isAdmin) {
+    if (!isOp) {
       await interaction.reply({
         content: "この操作を実行する権限がありません。",
         flags: MessageFlags.Ephemeral,

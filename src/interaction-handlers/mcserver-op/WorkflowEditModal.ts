@@ -4,6 +4,7 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import type { ModalBuilder, ModalSubmitInteraction } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { updateServerSettings } from "@/domain/flows/ActivationFlow";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
@@ -44,6 +45,15 @@ export class WorkflowEditModal extends WorkflowBaseCheckoutModal {
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
   ): Promise<void> {
+    // /mcserver-op が使える人のみ編集できる
+    const isOp =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserverOp.checkPermission(interaction.member));
+    if (!isOp) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
+
     const [, query] = interaction.customId.split("?");
     const workflowId = Number(
       new URLSearchParams(query).get(customIdParams.workflowId),

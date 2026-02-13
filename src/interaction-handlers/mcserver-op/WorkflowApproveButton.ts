@@ -10,10 +10,11 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { completeApproval } from "@/domain/flows/ActivationFlow";
 import { workflowService } from "@/domain/services/WorkflowService";
-import { WorkflowRegisterModal } from "@/interaction-handlers/workflow/WorkflowRegisterModal";
+import { WorkflowRegisterModal } from "@/interaction-handlers/mcserver-op/WorkflowRegisterModal";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -44,6 +45,18 @@ export class WorkflowApproveButton extends InteractionHandler {
   }
 
   public override async run(interaction: ButtonInteraction) {
+    // /mcserver-op が使える人のみ承認できる
+    const isOp =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserverOp.checkPermission(interaction.member));
+    if (!isOp) {
+      await interaction.reply({
+        content: "この操作を実行する権限がありません。",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     const [, query] = interaction.customId.split("?");
     const workflowId = Number(
       new URLSearchParams(query).get(customIdParams.workflowId),

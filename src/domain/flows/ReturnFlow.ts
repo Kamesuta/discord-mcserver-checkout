@@ -16,7 +16,7 @@ import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import type { Workflow } from "@/generated/prisma/client";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
+import { ReturnConfirmButton } from "@/interaction-handlers/mcserver/ReturnConfirmButton.js";
 import env from "@/utils/env";
 import { pterodactylService } from "../services/pterodactyl/PterodactylService.js";
 import { workflowFields } from "../utils/workflowFields.js";

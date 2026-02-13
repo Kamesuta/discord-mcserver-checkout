@@ -3,8 +3,14 @@ import {
   InteractionHandler,
   InteractionHandlerTypes,
 } from "@sapphire/framework";
-import { ButtonBuilder, type ButtonInteraction, ButtonStyle } from "discord.js";
-import { WorkflowCreateModal } from "@/interaction-handlers/workflow/WorkflowCreateModal";
+import {
+  ButtonBuilder,
+  type ButtonInteraction,
+  ButtonStyle,
+  MessageFlags,
+} from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
+import { WorkflowCreateModal } from "@/interaction-handlers/mcserver/WorkflowCreateModal";
 
 /**
  * 全部確認ボードの「申請する」ボタンハンドラー
@@ -30,6 +36,18 @@ export class CheckoutRequestButton extends InteractionHandler {
   }
 
   public override async run(interaction: ButtonInteraction) {
+    // /mcserver が使える人のみ申請できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.reply({
+        content: "この操作を実行する権限がありません。",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     // 申請者自身を主催者としてモーダルを表示
     const modal = WorkflowCreateModal.build(interaction.user.id, {
       panelUsers: [interaction.user.id],

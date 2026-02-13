@@ -26,6 +26,15 @@ export class ReturnSelectMenu extends InteractionHandler {
   public override async run(interaction: StringSelectMenuInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    // /mcserver が使える人のみ返却できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
+
     try {
       const workflowId = Number(interaction.values[0]);
       const skipReset = false;
@@ -48,13 +57,13 @@ export class ReturnSelectMenu extends InteractionHandler {
       }
 
       // /mcserver-op が使える人は全サーバーの返却ボタンを押せる
-      const isAdmin =
+      const isOp =
         interaction.inCachedGuild() &&
         (await commandMentions.mcserverOp.checkPermission(interaction.member));
 
       // 権限チェック
       if (
-        !isAdmin &&
+        !isOp &&
         workflow.organizerDiscordId !== interaction.user.id &&
         !workflow.panelUsers.some((u) => u.discordId === interaction.user.id)
       ) {

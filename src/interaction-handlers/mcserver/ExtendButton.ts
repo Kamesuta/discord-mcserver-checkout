@@ -9,6 +9,7 @@ import {
   ButtonStyle,
   MessageFlags,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -39,6 +40,15 @@ export class ExtendButton extends InteractionHandler {
     const workflowId = Number(params.get(customIdParams.workflowId));
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    // /mcserver が使える人のみ延長できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
 
     try {
       const workflow = await workflowService.findById(workflowId);

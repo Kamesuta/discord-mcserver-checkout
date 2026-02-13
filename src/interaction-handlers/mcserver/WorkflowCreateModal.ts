@@ -10,16 +10,17 @@ import {
   type ModalBuilder,
   type ModalSubmitInteraction,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
+import { WorkflowReviewButton } from "@/interaction-handlers/mcserver-op/WorkflowReviewButton";
 import {
   type CheckoutModalDefaults,
   WorkflowBaseCheckoutModal,
 } from "@/interaction-handlers/workflow/WorkflowBaseModal";
-import { WorkflowReviewButton } from "@/interaction-handlers/workflow/WorkflowReviewButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
@@ -48,6 +49,15 @@ export class WorkflowCreateModal extends WorkflowBaseCheckoutModal {
     interaction: ModalSubmitInteraction,
     fields: BaseWorkflowParams,
   ): Promise<void> {
+    // /mcserver が使える人のみ申請できる
+    const isGeneral =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserver.checkPermission(interaction.member));
+    if (!isGeneral) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
+
     const [, query] = interaction.customId.split("?");
     const organizerId = new URLSearchParams(query).get(
       customIdParams.organizerId,

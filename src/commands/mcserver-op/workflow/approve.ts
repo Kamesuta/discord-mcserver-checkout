@@ -13,9 +13,9 @@ import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { workflowFields } from "@/domain/utils/workflowFields.js";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { WorkflowApproveButton } from "@/interaction-handlers/workflow/WorkflowApproveButton";
-import { WorkflowRegisterButton } from "@/interaction-handlers/workflow/WorkflowRegisterButton";
-import { WorkflowRejectButton } from "@/interaction-handlers/workflow/WorkflowRejectButton";
+import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
+import { WorkflowRegisterButton } from "@/interaction-handlers/mcserver-op/WorkflowRegisterButton";
+import { WorkflowRejectButton } from "@/interaction-handlers/mcserver-op/WorkflowRejectButton";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-op", "workflow", (builder) =>

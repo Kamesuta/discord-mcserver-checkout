@@ -10,8 +10,8 @@ import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
-import { ExtendButton } from "@/interaction-handlers/extend/ExtendButton";
-import { ReturnConfirmButton } from "@/interaction-handlers/return/ReturnBackupSelect";
+import { ExtendButton } from "@/interaction-handlers/mcserver/ExtendButton";
+import { ReturnConfirmButton } from "@/interaction-handlers/mcserver/ReturnConfirmButton";
 import env from "@/utils/env";
 import { sapphireLogger } from "@/utils/log";
 

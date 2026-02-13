@@ -11,6 +11,7 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
+import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -48,6 +49,15 @@ export class WorkflowRejectButton extends InteractionHandler {
 
   public override async run(interaction: ButtonInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    // /mcserver-op が使える人のみ却下できる
+    const isOp =
+      interaction.inCachedGuild() &&
+      (await commandMentions.mcserverOp.checkPermission(interaction.member));
+    if (!isOp) {
+      await interaction.editReply("この操作を実行する権限がありません。");
+      return;
+    }
 
     const [, query] = interaction.customId.split("?");
     const workflowId = Number(

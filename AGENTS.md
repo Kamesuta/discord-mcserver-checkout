@@ -20,3 +20,22 @@
   - インタラクションハンドラークラス内に `static build()` メソッドを定義
   - ボタン、モーダル、セレクトメニューなどのコンポーネント作成ロジックをカプセル化
   - customIdの生成ロジックもbuild()内で管理し、**ハンドラークラス外で生成しない**
+
+- **権限は「一般向け(mcserver)」と「管理者向け(mcserver-op)」、「特殊操作向け(mcserver-admin)」の3つを用意**
+  - コマンドは下記サブコマンドに分ける
+    - mcserver: 一般ユーザー向けコマンド
+    - mcserver-op: 管理者向けコマンド
+    - mcserver-admin: 管理者向けイレギュラー対応コマンド
+  - インタラクション系も同様に分ける
+    - インタラクションは以下のようにして、**同様のコマンドの権限があるかどうか**で判定する
+      ```typescript
+      // /mcserver が使える人は全サーバーの返却ボタンを押せる
+      const isGeneral =
+        interaction.inCachedGuild() &&
+        (await commandMentions.mcserver.checkPermission(interaction.member));
+
+      // /mcserver-op が使える人は全サーバーの返却ボタンを押せる
+      const isOp =
+        interaction.inCachedGuild() &&
+        (await commandMentions.mcserverOp.checkPermission(interaction.member));
+      ```
