@@ -1,7 +1,11 @@
 import assert from "node:assert";
 import type { Command } from "@kaname-png/plugin-subcommands-advanced";
 import { container } from "@sapphire/framework";
-import { ApplicationCommandPermissionType, type GuildMember } from "discord.js";
+import {
+  type ApplicationCommandPermissions,
+  ApplicationCommandPermissionType,
+  type GuildMember,
+} from "discord.js";
 
 /**
  * Discord のコマンドメンション構文を返す。
@@ -63,50 +67,85 @@ export class CommandMention {
 
   /**
    * コマンドを使用する権限があるかチェックする
+   * 簡略化のため、チャンネルごとの権限チェックは未対応
+   * 参考: https://www.answeroverflow.com/m/1009673144149229658
    * @param member メンバー
    * @returns 権限がある場合はtrue、ない場合はfalse
    */
-  public async checkPermission(member: GuildMember) {
+  public async checkPermission(member: GuildMember): Promise<boolean> {
     // コマンドIDを取得
     const commandId = this.commandId(member.guild.id);
     if (!commandId) return false;
 
-    // コマンドを取得
-    const command = await member.guild.commands.fetch(commandId);
-    if (!command) return false;
+    // 権限オーバーライドを取得
+    const permissionOverrides = await member.guild.commands.permissions.fetch(
+      {},
+    );
 
-    // オーバーライド権限を取得
-    const overridePermissions = await command.permissions
-      .fetch({})
-      .catch(() => []);
-    for (const permission of overridePermissions) {
-      // 優先度が高い順にオーバーライドをチェック
-
-      // ロールまたはユーザーの権限が一致するかチェック
-      const matchRole =
-        permission.type === ApplicationCommandPermissionType.Role &&
-        member.roles.cache.has(permission.id);
-      const matchUser =
-        permission.type === ApplicationCommandPermissionType.User &&
-        member.user.id === permission.id;
-
-      // 権限が一致しない場合は次の権限をチェック
-      if (!matchRole && !matchUser) continue;
-
-      // マッチした瞬間に結果確定
-      return permission.permission;
+    // コマンドの権限オーバーライドをチェック
+    const commandPermissions = permissionOverrides.get(commandId);
+    if (commandPermissions) {
+      const result = await this._getMatchOverride(member, commandPermissions);
+      if (result !== undefined) return result;
     }
 
-    // default権限が未設定なら全員許可
-    if (!command.defaultMemberPermissions) {
+    // 連携サービスのオーバーライドをチェック
+    const botPermissions = permissionOverrides.get(
+      member.client.application.id,
+    );
+    if (botPermissions) {
+      const result = await this._getMatchOverride(member, botPermissions);
+      if (result !== undefined) return result;
+    }
+
+    // 連携サービスのeveryoneが許可
+    return true;
+  }
+
+  /**
+   * メンバーに一致する権限オーバーライドを取得する
+   * @param member メンバー
+   * @param permissions 権限オーバーライド
+   * @returns 一致する権限オーバーライド、または undefined
+   */
+  private async _getMatchOverride(
+    member: GuildMember,
+    permissions: ApplicationCommandPermissions[],
+  ): Promise<boolean | undefined> {
+    // メンバーオーバーライド
+    const memberOverride = permissions.find(
+      (p) =>
+        p.type === ApplicationCommandPermissionType.User && p.id === member.id,
+    )?.permission;
+    if (memberOverride !== undefined) {
+      // メンバーの権限が設定されている場合は、それを優先
+      return memberOverride;
+    }
+
+    // @everyone に対して許可されているか、設定がない場合undefined
+    const everyoneAllowed = permissions.find(
+      (p) => p.id === member.guild.id,
+    )?.permission;
+
+    // ロールオーバーライド
+    const roleOverrides = permissions
+      .filter(
+        (p) =>
+          p.type === ApplicationCommandPermissionType.Role &&
+          member.roles.cache.has(p.id),
+      )
+      .map((p) => p.permission);
+
+    // @everyone が許可されていて、かつロールに拒否設定がある場合拒否
+    if (everyoneAllowed === true && roleOverrides.every((r) => r === false)) {
+      return false;
+    }
+    // @everyone が拒否されていて、かつロールに許可がある場合は許可
+    if (everyoneAllowed === false && roleOverrides.some((r) => r === true)) {
       return true;
     }
 
-    // default権限を持っている場合は許可
-    if (member.permissions.has(command.defaultMemberPermissions)) {
-      return true;
-    }
-
-    return false;
+    // マッチするロールがない場合は @everyone の設定を返す
+    return everyoneAllowed;
   }
 }
