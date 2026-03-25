@@ -138,7 +138,13 @@ class PterodactylBackupService extends PterodactylBaseService {
         backups.push(...nextPage.data);
       }
 
-      return backups;
+      return (
+        backups
+          // 失敗したバックアップを除外
+          .filter((b) => b.attributes.is_successful)
+          // 自動バックアップを除外
+          .filter((b) => !b.attributes.name.startsWith("Automatic Backup "))
+      );
     } catch (error) {
       logger.error(
         `サーバー ${serverId} のバックアップ一覧取得中にエラーが発生しました:`,
