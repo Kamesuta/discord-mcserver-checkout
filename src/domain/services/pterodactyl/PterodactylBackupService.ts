@@ -1,3 +1,4 @@
+import { Agent, fetch as undiciFetch } from "undici";
 import { logger } from "@/utils/log";
 import {
   type PendingOperation,
@@ -96,6 +97,24 @@ class PterodactylBackupService extends PterodactylBaseService {
   private static readonly _BACKUP_POLL_INTERVAL = 3000;
   /** バックアップ完了のタイムアウト (ms) */
   private static readonly _BACKUP_POLL_TIMEOUT = 300000;
+  /** バックアップファイルの接続タイムアウト (ms) */
+  private static readonly _DOWNLOAD_CONNECT_TIMEOUT = 60000;
+  /** バックアップファイル全体のリクエストタイムアウト (ms) */
+  private static readonly _DOWNLOAD_REQUEST_TIMEOUT = 300000;
+  /** バックアップファイルのダウンロード試行回数 */
+  private static readonly _DOWNLOAD_MAX_ATTEMPTS = 3;
+  /** リトライ前の待機時間 (ms) */
+  private static readonly _DOWNLOAD_RETRY_DELAY = 2000;
+  /** 署名付きURLダウンロード専用 dispatcher
+   *
+   * undici のデフォルト接続タイムアウトは短めなので、
+   * バックアップのような重い通信だけ明示的に延長する。
+   */
+  private static readonly _DOWNLOAD_DISPATCHER = new Agent({
+    connect: {
+      timeout: PterodactylBackupService._DOWNLOAD_CONNECT_TIMEOUT,
+    },
+  });
   /**
    * サーバーのバックアップ制限を取得
    * @param serverId サーバーID
@@ -272,14 +291,11 @@ class PterodactylBackupService extends PterodactylBaseService {
         );
 
       // 取得した署名 URL からバイナリデータをダウンロード
-      const fileResponse = await fetch(attributes.url);
-      if (!fileResponse.ok) {
-        throw new Error(
-          `バックアップダウンロード失敗: ${fileResponse.statusText}`,
-        );
-      }
-
-      return fileResponse.arrayBuffer();
+      return await this._downloadBackupWithRetry(
+        serverId,
+        backupUuid,
+        attributes.url,
+      );
     } catch (error) {
       logger.error(
         `サーバー ${serverId} のバックアップ (${backupUuid}) ダウンロード中にエラーが発生しました:`,
@@ -287,6 +303,66 @@ class PterodactylBackupService extends PterodactylBaseService {
       );
       throw error;
     }
+  }
+
+  /**
+   * 署名付き URL からバックアップファイルをダウンロードする
+   * 一時的な通信失敗を考慮し、数回リトライする
+   * @param serverId サーバーID
+   * @param backupUuid バックアップのUUID
+   * @param downloadUrl 署名付きダウンロードURL
+   * @returns ダウンロードされたバックアップのバイナリデータ
+   */
+  private async _downloadBackupWithRetry(
+    serverId: string,
+    backupUuid: string,
+    downloadUrl: string,
+  ): Promise<ArrayBuffer> {
+    let lastError: unknown;
+
+    for (
+      let attempt = 1;
+      attempt <= PterodactylBackupService._DOWNLOAD_MAX_ATTEMPTS;
+      attempt++
+    ) {
+      try {
+        // Node.js ではfetch APIは10秒でタイムアウトしてしまうため、undici(fetchの内部API) を使用する
+        // https://stackoverflow.com/a/79263202
+        const fileResponse = await undiciFetch(downloadUrl, {
+          // 署名付きURL先の接続待ちを長めにしつつ、
+          // 全体としても無限に待たないように明示的な上限を持たせる。
+          dispatcher: PterodactylBackupService._DOWNLOAD_DISPATCHER,
+          signal: AbortSignal.timeout(
+            PterodactylBackupService._DOWNLOAD_REQUEST_TIMEOUT,
+          ),
+        });
+
+        if (!fileResponse.ok) {
+          throw new Error(
+            `バックアップダウンロード失敗: ${fileResponse.status} ${fileResponse.statusText}`,
+          );
+        }
+
+        return await fileResponse.arrayBuffer();
+      } catch (error) {
+        lastError = error;
+
+        if (attempt >= PterodactylBackupService._DOWNLOAD_MAX_ATTEMPTS) {
+          break;
+        }
+
+        // 通信瞬断や一時的なプロキシ遅延を想定し、少し待って再試行する。
+        logger.warn(
+          `サーバー ${serverId} のバックアップ (${backupUuid}) ダウンロード試行 ${attempt}/${PterodactylBackupService._DOWNLOAD_MAX_ATTEMPTS} に失敗したため再試行します:`,
+          error,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, PterodactylBackupService._DOWNLOAD_RETRY_DELAY),
+        );
+      }
+    }
+
+    throw lastError;
   }
 
   /**
