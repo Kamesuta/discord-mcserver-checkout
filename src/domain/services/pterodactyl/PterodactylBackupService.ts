@@ -62,6 +62,17 @@ interface PterodactylBackup {
  */
 interface ListBackupsResponse {
   data: PterodactylBackup[];
+  // biome-ignore-start lint/style/useNamingConvention: Pterodactyl API schema
+  meta: {
+    pagination: {
+      current_page: number;
+      total_pages: number;
+      count: number;
+      total: number;
+      per_page: number;
+    };
+  };
+  // biome-ignore-end lint/style/useNamingConvention: Pterodactyl API schema
 }
 
 /**
@@ -112,10 +123,22 @@ class PterodactylBackupService extends PterodactylBaseService {
    */
   public async listBackups(serverId: string): Promise<PterodactylBackup[]> {
     try {
-      const data = await this._requestClientApi<ListBackupsResponse>(
-        `/servers/${serverId}/backups`,
+      // まず1ページ目を取得し、総ページ数を確認する
+      const firstPage = await this._requestClientApi<ListBackupsResponse>(
+        `/servers/${serverId}/backups?per_page=50&page=1`,
       );
-      return data.data;
+      const backups = [...firstPage.data];
+      const { total_pages } = firstPage.meta.pagination;
+
+      // Pterodactyl の一覧 API はページネーションされるため、2ページ目以降も順に取得する
+      for (let page = 2; page <= total_pages; page++) {
+        const nextPage = await this._requestClientApi<ListBackupsResponse>(
+          `/servers/${serverId}/backups?per_page=50&page=${page}`,
+        );
+        backups.push(...nextPage.data);
+      }
+
+      return backups;
     } catch (error) {
       logger.error(
         `サーバー ${serverId} のバックアップ一覧取得中にエラーが発生しました:`,
