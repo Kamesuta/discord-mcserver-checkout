@@ -14,6 +14,7 @@ import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
+import env from "@/utils/env.js";
 import { logger } from "@/utils/log";
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -21,11 +22,12 @@ import { logger } from "@/utils/log";
 })
 export class ExtendButton extends InteractionHandler {
   static build(workflowId: number): ButtonBuilder {
+    // 延長日数は環境変数で切り替え可能
     return new ButtonBuilder()
       .setCustomId(
         `extend-workflow?${new URLSearchParams({ [customIdParams.workflowId]: String(workflowId) })}`,
       )
-      .setLabel("1週間延長")
+      .setLabel(`${env.CHECKOUT_EXTEND_DAYS}日延長`)
       .setStyle(ButtonStyle.Primary);
   }
 
@@ -68,10 +70,11 @@ export class ExtendButton extends InteractionHandler {
         return;
       }
 
-      // 1週間（7日）延長
+      // 環境変数で指定した日数だけ延長
       const currentEndDate = new Date(workflow.endDate);
       const newEndDate = new Date(
-        currentEndDate.getTime() + 7 * 24 * 60 * 60 * 1000,
+        currentEndDate.getTime() +
+          env.CHECKOUT_EXTEND_DAYS * 24 * 60 * 60 * 1000,
       );
 
       await workflowService.updateEndDate(workflowId, newEndDate);
@@ -80,7 +83,7 @@ export class ExtendButton extends InteractionHandler {
       await notificationBoardService.updateBoard(interaction.client);
 
       await interaction.editReply(
-        `期限 (ID: ${workflowId}) を1週間延長しました。\n` +
+        `期限 (ID: ${workflowId}) を${env.CHECKOUT_EXTEND_DAYS}日延長しました。\n` +
           `新しい期限: <t:${Math.floor(newEndDate.getTime() / 1000)}:R>`,
       );
 

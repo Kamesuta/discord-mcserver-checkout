@@ -10,7 +10,9 @@ import env from "@/utils/env.js";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommand("mcserver", (builder) =>
-  builder.setName("extend").setDescription("サーバー貸出期限を1週間延長する"),
+  builder
+    .setName("extend")
+    .setDescription(`サーバー貸出期限を${env.CHECKOUT_EXTEND_DAYS}日延長する`),
 )
 export class McServerExtendCommand extends Command {
   public override async chatInputRun(
@@ -34,10 +36,11 @@ export class McServerExtendCommand extends Command {
         return;
       }
 
-      // 1週間（7日）延長 (本日から1週間後)
+      // 環境変数で指定した日数だけ延長する
       const currentEndDate = new Date();
       const newEndDate = new Date(
-        currentEndDate.getTime() + 7 * 24 * 60 * 60 * 1000,
+        currentEndDate.getTime() +
+          env.CHECKOUT_EXTEND_DAYS * 24 * 60 * 60 * 1000,
       );
 
       await workflowService.updateEndDate(userWorkflow.id, newEndDate);
@@ -48,7 +51,7 @@ export class McServerExtendCommand extends Command {
         : null;
 
       await interaction.editReply(
-        `「${userWorkflow.name}」(ID: ${userWorkflow.id})のサーバー貸出を1週間延長しました。\n\n` +
+        `「${userWorkflow.name}」(ID: ${userWorkflow.id})のサーバー貸出を${env.CHECKOUT_EXTEND_DAYS}日延長しました。\n\n` +
           `申請ID: ${userWorkflow.id}\n` +
           `企画: ${userWorkflow.name}\n` +
           `サーバー: \`${serverName ?? userWorkflow.pteroServerId ?? "未割り当て"}\`\n` +
@@ -61,7 +64,7 @@ export class McServerExtendCommand extends Command {
       );
       if (channel?.isSendable()) {
         await channel.send(
-          `<@${interaction.user.id}>が「${userWorkflow.name}」(ID:${userWorkflow.id},鯖:${serverName},主催:<@${userWorkflow.organizerDiscordId}>)のサーバー貸出を1週間延長しました。`,
+          `<@${interaction.user.id}>が「${userWorkflow.name}」(ID:${userWorkflow.id},鯖:${serverName},主催:<@${userWorkflow.organizerDiscordId}>)のサーバー貸出を${env.CHECKOUT_EXTEND_DAYS}日延長しました。`,
         );
       }
 

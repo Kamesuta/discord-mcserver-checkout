@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import semver from "semver";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
+import env from "@/utils/env.js";
 
 /** モーダルフィールドのデフォルト値 */
 export interface CheckoutModalDefaults {
@@ -260,8 +261,9 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
         return null;
       }
     } else {
-      // イベント日未指定の場合は14日間
-      periodDays = 14;
+      // イベント日未指定の場合は環境変数のデフォルト貸出期間を利用
+      // 運用に応じて 1 週間 / 2 週間 などを .env で切り替えられるようにする
+      periodDays = env.CHECKOUT_DEFAULT_PERIOD_DAYS;
     }
 
     if (panelUsers.length === 0) {

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { tmpdir } from "node:os";
-import { cleanEnv, json, str } from "envalid";
+import { cleanEnv, json, num, str } from "envalid";
 
 const _DEFAULT_ARCHIVE_TEMP_DIR = tmpdir();
 
@@ -32,6 +32,10 @@ const env = cleanEnv(process.env, {
   DISCORD_NOTIFY_CHANNEL_ID: str(),
   /** マイクラ管理者ロールID（メンション用） */
   DISCORD_ADMIN_ROLE_ID: str(),
+  /** イベント日未指定時のデフォルト貸出期間（日数） */
+  CHECKOUT_DEFAULT_PERIOD_DAYS: num({ default: 14 }),
+  /** 利用者による延長時に加算する日数 */
+  CHECKOUT_EXTEND_DAYS: num({ default: 7 }),
   // biome-ignore-end lint/style/useNamingConvention: 環境変数の定義のため大文字使用
 });
 
