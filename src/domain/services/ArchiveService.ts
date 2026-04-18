@@ -1,9 +1,9 @@
-import { unlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ArchiveName } from "@/domain/services/ArchiveName";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { rcloneService } from "@/domain/services/RcloneService";
+import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
 /**
@@ -135,10 +135,12 @@ class ArchiveService {
       backup.createdAt,
       backup.supplement,
     );
-    // 一時フォルダにダウンロード
-    const localPath = join(tmpdir(), fileName);
+    // コンテナやホストの /tmp 容量に依存しないよう、設定可能な一時保存先を使う
+    const localPath = join(env.ARCHIVE_TEMP_DIR, fileName);
 
     try {
+      // 一時保存先は事前に作成しておく
+      await mkdir(env.ARCHIVE_TEMP_DIR, { recursive: true });
       const data = await pterodactylBackupService.downloadBackup(
         serverId,
         backup.uuid,

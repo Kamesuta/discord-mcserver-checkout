@@ -1,5 +1,8 @@
 import "dotenv/config";
+import { tmpdir } from "node:os";
 import { cleanEnv, json, str } from "envalid";
+
+const _DEFAULT_ARCHIVE_TEMP_DIR = tmpdir();
 
 const env = cleanEnv(process.env, {
   // biome-ignore-start lint/style/useNamingConvention: 環境変数の定義のため大文字使用
@@ -23,6 +26,8 @@ const env = cleanEnv(process.env, {
   RCLONE_PATH: str({ default: "rclone" }),
   /** rcloneの保存先ベースパス (例: gdrive:/path/to/dir) */
   RCLONE_BASE_PATH: str(),
+  /** バックアップの一時保存先ディレクトリ */
+  ARCHIVE_TEMP_DIR: str({ default: _DEFAULT_ARCHIVE_TEMP_DIR }),
   /** 通知用チャンネルID */
   DISCORD_NOTIFY_CHANNEL_ID: str(),
   /** マイクラ管理者ロールID（メンション用） */
