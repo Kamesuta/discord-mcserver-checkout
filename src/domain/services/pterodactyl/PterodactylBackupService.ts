@@ -1,3 +1,6 @@
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { Agent, fetch as undiciFetch } from "undici";
 import { logger } from "@/utils/log";
 import {
@@ -274,15 +277,16 @@ class PterodactylBackupService extends PterodactylBaseService {
 
   /**
    * サーバーのバックアップをダウンロード
-   * バックアップのダウンロード URL を取得し、その内容を ArrayBuffer として返す
+   * バックアップのダウンロード URL を取得し、その内容をファイルへ直接保存する
    * @param serverId サーバーID
    * @param backupUuid バックアップのUUID
-   * @returns ダウンロードされたバックアップのバイナリデータ
+   * @param destinationPath 保存先ファイルパス
    */
   public async downloadBackup(
     serverId: string,
     backupUuid: string,
-  ): Promise<ArrayBuffer> {
+    destinationPath: string,
+  ): Promise<void> {
     try {
       // 署名付きダウンロード URL を取得
       const { attributes } =
@@ -290,11 +294,12 @@ class PterodactylBackupService extends PterodactylBaseService {
           `/servers/${serverId}/backups/${backupUuid}/download`,
         );
 
-      // 取得した署名 URL からバイナリデータをダウンロード
-      return await this._downloadBackupWithRetry(
+      // 取得した署名 URL からファイルへ直接書き込む
+      await this._downloadBackupWithRetry(
         serverId,
         backupUuid,
         attributes.url,
+        destinationPath,
       );
     } catch (error) {
       logger.error(
@@ -311,13 +316,14 @@ class PterodactylBackupService extends PterodactylBaseService {
    * @param serverId サーバーID
    * @param backupUuid バックアップのUUID
    * @param downloadUrl 署名付きダウンロードURL
-   * @returns ダウンロードされたバックアップのバイナリデータ
+   * @param destinationPath 保存先ファイルパス
    */
   private async _downloadBackupWithRetry(
     serverId: string,
     backupUuid: string,
     downloadUrl: string,
-  ): Promise<ArrayBuffer> {
+    destinationPath: string,
+  ): Promise<void> {
     let lastError: unknown;
 
     for (
@@ -343,7 +349,18 @@ class PterodactylBackupService extends PterodactylBaseService {
           );
         }
 
-        return await fileResponse.arrayBuffer();
+        if (!fileResponse.body) {
+          throw new Error(
+            "バックアップダウンロード失敗: レスポンス本文がありません",
+          );
+        }
+
+        // 大きなバックアップでもメモリを圧迫しないよう、レスポンスをそのままファイルへ流す
+        await pipeline(
+          Readable.fromWeb(fileResponse.body),
+          createWriteStream(destinationPath),
+        );
+        return;
       } catch (error) {
         lastError = error;
 

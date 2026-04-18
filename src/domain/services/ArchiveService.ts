@@ -1,4 +1,4 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { ArchiveName } from "@/domain/services/ArchiveName";
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
@@ -141,11 +141,11 @@ class ArchiveService {
     try {
       // 一時保存先は事前に作成しておく
       await mkdir(env.ARCHIVE_TEMP_DIR, { recursive: true });
-      const data = await pterodactylBackupService.downloadBackup(
+      await pterodactylBackupService.downloadBackup(
         serverId,
         backup.uuid,
+        localPath,
       );
-      await writeFile(localPath, Buffer.from(data));
       // フォルダ名/ 配下にファイルをアップロード
       await rcloneService.upload(localPath, archiveName.folderName);
     } finally {
