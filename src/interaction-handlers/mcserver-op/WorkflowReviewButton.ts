@@ -4,23 +4,14 @@ import {
   InteractionHandlerTypes,
 } from "@sapphire/framework";
 import {
-  ActionRowBuilder,
   ButtonBuilder as Builder,
-  type ButtonBuilder,
   type ButtonInteraction,
   ButtonStyle,
-  EmbedBuilder,
   MessageFlags,
 } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands";
 import { customIdParams } from "@/discord-utils/customIds";
-import { userService } from "@/domain/services/UserService";
-import { workflowService } from "@/domain/services/WorkflowService";
-import { workflowFields } from "@/domain/utils/workflowFields";
-import { WorkflowStatus } from "@/generated/prisma/client";
-import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
-import { WorkflowRegisterButton } from "@/interaction-handlers/mcserver-op/WorkflowRegisterButton";
-import { WorkflowRejectButton } from "@/interaction-handlers/mcserver-op/WorkflowRejectButton";
+import { createWorkflowApprovalReview } from "@/domain/utils/workflowApprovalReview";
 import { logger } from "@/utils/log";
 
 /**
@@ -70,67 +61,15 @@ export class WorkflowReviewButton extends InteractionHandler {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
-      const workflow = await workflowService.findById(id);
-
-      if (!workflow) {
-        await interaction.editReply("申請が見つかりませんでした。");
+      const result = await createWorkflowApprovalReview(id);
+      if ("error" in result) {
+        await interaction.editReply(result.error);
         return;
       }
-
-      if (workflow.status !== WorkflowStatus.PENDING) {
-        await interaction.editReply("PENDING の申請のみ承認できます。");
-        return;
-      }
-
-      // 未登録のパネルユーザーを検索
-      const unregistered: string[] = [];
-      for (const panelUser of workflow.panelUsers) {
-        const pteroUser = await userService.findByDiscordId(
-          panelUser.discordId,
-        );
-        // ユーザーレコードが存在しない、または registered が false、または username が未設定の場合は未登録
-        if (!pteroUser || !pteroUser.registered || !pteroUser.username) {
-          unregistered.push(panelUser.discordId);
-        }
-      }
-
-      // 申請内容 Embed
-      const embed = new EmbedBuilder()
-        .setTitle(`申請内容`)
-        .setColor(unregistered.length > 0 ? 0xf39c12 : 0x2ecc71)
-        .addFields(
-          ...workflowFields(workflow),
-          {
-            name: "パネルユーザー",
-            value: workflow.panelUsers
-              .map(
-                (u) =>
-                  `<@${u.discordId}> ${unregistered.includes(u.discordId) ? "⚠️ 未登録" : "✅ 登録済み"}`,
-              )
-              .join("\n"),
-          },
-          { name: "バージョン", value: workflow.mcVersion ?? "未指定" },
-          { name: "期間", value: `${workflow.periodDays}日` },
-        );
-
-      if (workflow.description) {
-        embed.addFields({ name: "補足", value: workflow.description });
-      }
-
-      // ボタン
-      if (unregistered.length > 0) {
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          WorkflowRegisterButton.build(workflow.id, unregistered),
-          WorkflowRejectButton.build(workflow.id),
-        );
-        await interaction.editReply({ embeds: [embed], components: [row] });
-      } else {
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          WorkflowApproveButton.build(workflow.id),
-          WorkflowRejectButton.build(workflow.id),
-        );
-        await interaction.editReply({ embeds: [embed], components: [row] });
-      }
+      await interaction.editReply({
+        embeds: [result.embed],
+        components: [result.row],
+      });
     } catch (error) {
       logger.error(error);
       const message =

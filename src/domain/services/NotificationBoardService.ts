@@ -22,6 +22,7 @@ import { WorkflowStatus } from "@/generated/prisma/client";
 import { CheckoutRequestButton } from "@/interaction-handlers/mcserver/CheckoutRequestButton";
 import { ReturnRequestButton } from "@/interaction-handlers/mcserver/ReturnRequestButton";
 import { ReuseRequestButton } from "@/interaction-handlers/mcserver/ReuseRequestButton";
+import { WorkflowReviewRequestButton } from "@/interaction-handlers/mcserver-op/WorkflowReviewRequestButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
@@ -124,10 +125,11 @@ class NotificationBoardService {
         ),
     );
 
-    // 破壊的な操作なので、返却と分けて最下部に独立ボタンとして置く
+    // ボード下部に、利用者向け流用導線と管理者向け申請確認導線を並べる
     components.push(
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         ReuseRequestButton.build(),
+        WorkflowReviewRequestButton.build(),
       ),
     );
 
