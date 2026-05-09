@@ -7,6 +7,7 @@ import { CommandMention } from "./CommandMention.js";
 class CommandMentions {
   readonly mcserver = new CommandMention("mcserver");
   readonly mcserverCheckout = new CommandMention("mcserver/checkout");
+  readonly mcserverReuse = new CommandMention("mcserver/reuse");
   readonly mcserverResetPassword = new CommandMention(
     "mcserver/reset-password",
   );

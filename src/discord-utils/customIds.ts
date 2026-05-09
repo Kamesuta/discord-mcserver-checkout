@@ -17,4 +17,8 @@ export const customIdParams = {
   users: "u",
   /** アーカイブをスキップ */
   skipArchive: "sa",
+  /** 流用元ワークフローID */
+  sourceWorkflowId: "sw",
+  /** 流用確認トークン */
+  reuseToken: "rt",
 } as const;

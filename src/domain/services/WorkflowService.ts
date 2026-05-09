@@ -56,6 +56,20 @@ export interface UpdateWorkflowStatusParams {
   endDate?: Date;
 }
 
+/** 流用時のステータス切り替えパラメータ */
+export interface ReuseWorkflowParams {
+  /** 流用元のACTIVEワークフローID */
+  sourceWorkflowId: number;
+  /** 流用先のPENDINGワークフローID */
+  targetWorkflowId: number;
+  /** 引き継ぐPterodactylサーバーID */
+  pteroServerId: string;
+  /** 流用開始日 */
+  startDate: Date;
+  /** 新しい貸出終了日 */
+  endDate: Date;
+}
+
 /** 申請内容更新パラメータ */
 export interface UpdateWorkflowParams extends BaseWorkflowParams {
   /** 申請ID */
@@ -327,6 +341,31 @@ export class WorkflowService {
     return await prisma.workflow.update({
       where: { id },
       data: { endDate },
+    });
+  }
+
+  /**
+   * 流用時に旧ワークフローを返却済みにし、新ワークフローをACTIVE化する
+   * 2件の状態遷移を1トランザクションで確定させる。
+   */
+  public async activateReuse(params: ReuseWorkflowParams): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      await tx.workflow.update({
+        where: { id: params.sourceWorkflowId },
+        data: {
+          status: WorkflowStatus.RETURNED,
+        },
+      });
+
+      await tx.workflow.update({
+        where: { id: params.targetWorkflowId },
+        data: {
+          status: WorkflowStatus.ACTIVE,
+          pteroServerId: params.pteroServerId,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        },
+      });
     });
   }
 

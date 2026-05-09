@@ -5,6 +5,8 @@ import type {
   JSONEncodable,
 } from "discord.js";
 import {
+  ActionRowBuilder,
+  type ButtonBuilder,
   ComponentType,
   ContainerBuilder,
   type Message,
@@ -19,6 +21,7 @@ import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { CheckoutRequestButton } from "@/interaction-handlers/mcserver/CheckoutRequestButton";
 import { ReturnRequestButton } from "@/interaction-handlers/mcserver/ReturnRequestButton";
+import { ReuseRequestButton } from "@/interaction-handlers/mcserver/ReuseRequestButton";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
 
@@ -119,6 +122,13 @@ class NotificationBoardService {
             ? [new TextDisplayBuilder().setContent(ganttChart)]
             : []),
         ),
+    );
+
+    // 破壊的な操作なので、返却と分けて最下部に独立ボタンとして置く
+    components.push(
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        ReuseRequestButton.build(),
+      ),
     );
 
     return {
