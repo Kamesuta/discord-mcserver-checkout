@@ -11,6 +11,7 @@ import { notificationBoardService } from "@/domain/services/NotificationBoardSer
 import { pterodactylBackupService } from "@/domain/services/pterodactyl/PterodactylBackupService";
 import { pterodactylCleanService } from "@/domain/services/pterodactyl/PterodactylCleanService";
 import { pterodactylStartupService } from "@/domain/services/pterodactyl/PterodactylStartupService";
+import { reminderMessageService } from "@/domain/services/ReminderMessageService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
@@ -129,6 +130,12 @@ export async function completeReturn(
     id: workflow.id,
     status: WorkflowStatus.RETURNED,
   });
+
+  // 返却が完了したら、期限切れ前の催促通知は不要なので削除する
+  await reminderMessageService.deleteByWorkflowId(
+    interaction.client,
+    workflow.id,
+  );
 
   // 通知チャンネルに主催者へ返却通知
   try {

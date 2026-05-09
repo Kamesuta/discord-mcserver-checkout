@@ -3,6 +3,7 @@ import {
   RegisterSubCommand,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
+import { reminderMessageService } from "@/domain/services/ReminderMessageService";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -36,8 +37,13 @@ export class McServerExtendCommand extends Command {
         return;
       }
 
+      if (!userWorkflow.endDate) {
+        await interaction.editReply("貸出期限が設定されていません。");
+        return;
+      }
+
       // 環境変数で指定した日数だけ延長する
-      const currentEndDate = new Date();
+      const currentEndDate = new Date(userWorkflow.endDate);
       const newEndDate = new Date(
         currentEndDate.getTime() +
           env.CHECKOUT_EXTEND_DAYS * 24 * 60 * 60 * 1000,
@@ -50,6 +56,12 @@ export class McServerExtendCommand extends Command {
         ? await serverBindingService.getName(userWorkflow.pteroServerId)
         : null;
 
+      // 延長できたら、既存の催促通知を消して代わりに延長結果を通知する
+      await reminderMessageService.deleteByWorkflowId(
+        interaction.client,
+        userWorkflow.id,
+      );
+
       await interaction.editReply(
         `「${userWorkflow.name}」(ID: ${userWorkflow.id})のサーバー貸出を${env.CHECKOUT_EXTEND_DAYS}日延長しました。\n\n` +
           `申請ID: ${userWorkflow.id}\n` +
@@ -58,15 +70,14 @@ export class McServerExtendCommand extends Command {
           `新しい期限: <t:${Math.floor(newEndDate.getTime() / 1000)}:D>`,
       );
 
-      // チャンネルに通知
-      const channel = await interaction.client.channels.fetch(
-        env.DISCORD_NOTIFY_CHANNEL_ID,
+      await reminderMessageService.sendExtensionNotification(
+        interaction.client,
+        userWorkflow,
+        currentEndDate,
+        newEndDate,
+        interaction.user.id,
+        serverName,
       );
-      if (channel?.isSendable()) {
-        await channel.send(
-          `<@${interaction.user.id}>が「${userWorkflow.name}」(ID:${userWorkflow.id},鯖:${serverName},主催:<@${userWorkflow.organizerDiscordId}>)のサーバー貸出を${env.CHECKOUT_EXTEND_DAYS}日延長しました。`,
-        );
-      }
 
       logger.info(
         `Workflow ${userWorkflow.id} extended by ${interaction.user.id} (${interaction.user.tag}) via command`,

@@ -12,6 +12,8 @@ import {
 import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { notificationBoardService } from "@/domain/services/NotificationBoardService";
+import { reminderMessageService } from "@/domain/services/ReminderMessageService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env.js";
@@ -81,6 +83,25 @@ export class ExtendButton extends InteractionHandler {
 
       // 全部確認ボードを更新
       await notificationBoardService.updateBoard(interaction.client);
+
+      // 延長できたら、押された催促通知を消して代わりに延長結果を通知する
+      await reminderMessageService.deleteInteractionMessage(interaction);
+      await reminderMessageService.deleteByWorkflowId(
+        interaction.client,
+        workflowId,
+      );
+
+      const serverName = workflow.pteroServerId
+        ? await serverBindingService.getName(workflow.pteroServerId)
+        : undefined;
+      await reminderMessageService.sendExtensionNotification(
+        interaction.client,
+        workflow,
+        currentEndDate,
+        newEndDate,
+        interaction.user.id,
+        serverName,
+      );
 
       await interaction.editReply(
         `期限 (ID: ${workflowId}) を${env.CHECKOUT_EXTEND_DAYS}日延長しました。\n` +

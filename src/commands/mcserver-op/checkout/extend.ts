@@ -3,6 +3,8 @@ import {
   RegisterSubCommandGroup,
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
+import { reminderMessageService } from "@/domain/services/ReminderMessageService";
+import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
@@ -71,7 +73,34 @@ export class CheckoutExtendCommand extends Command {
           break;
         }
         case WorkflowStatus.ACTIVE: {
+          if (!workflow.endDate) {
+            await interaction.editReply(
+              "この申請には現在の終了日がありません。期限変更はできません。",
+            );
+            return;
+          }
+
+          const oldEndDate = new Date(workflow.endDate);
           await workflowService.updateEndDate(id, targetDate);
+
+          // 延長・期限変更できたら、既存の催促通知を消して代わりに変更結果を通知する
+          await reminderMessageService.deleteByWorkflowId(
+            interaction.client,
+            id,
+          );
+
+          const serverName = workflow.pteroServerId
+            ? await serverBindingService.getName(workflow.pteroServerId)
+            : undefined;
+          await reminderMessageService.sendExtensionNotification(
+            interaction.client,
+            workflow,
+            oldEndDate,
+            targetDate,
+            interaction.user.id,
+            serverName,
+          );
+
           await interaction.editReply(
             `申請 (ID: \`${id}\`) の終了日を <t:${Math.floor(targetDate.getTime() / 1000)}:D> に更新しました。`,
           );
