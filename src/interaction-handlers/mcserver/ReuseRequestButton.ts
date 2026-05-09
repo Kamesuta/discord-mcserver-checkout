@@ -32,7 +32,7 @@ export class ReuseRequestButton extends InteractionHandler {
     return new ButtonBuilder()
       .setCustomId("reuse-request-button")
       .setLabel("サーバーを流用する")
-      .setStyle(ButtonStyle.Secondary);
+      .setStyle(ButtonStyle.Primary);
   }
 
   public override parse(interaction: ButtonInteraction) {
@@ -93,7 +93,11 @@ export class ReuseRequestButton extends InteractionHandler {
       );
 
       await interaction.editReply({
-        content: "流用する申請を選択してください：",
+        content:
+          "流用とは、申請済みのサーバーを追加の申請なしに別の企画へ転用できる機能です。\n" +
+          "サーバーがバックアップされ、リセットされたうえで新しい企画に引き継がれます。\n" +
+          "企画ごとのバックアップを確実に残すためにも、企画を切り替えるときはこの機能を使ってください。\n\n" +
+          "流用する申請を選択してください：",
         components: [row],
       });
     } catch (error) {

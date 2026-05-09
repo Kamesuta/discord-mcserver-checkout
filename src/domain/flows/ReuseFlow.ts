@@ -62,8 +62,11 @@ export async function createReuseConfirmation(
         value: `${serverName} / ${sourceWorkflow.pteroServerId}`,
       },
       {
-        name: "パネルユーザー",
-        value: draft.fields.panelUsers.map((id) => `<@${id}>`).join(", "),
+        name: "サーバーファイル",
+        value:
+          draft.fileMode === "keep"
+            ? "保持する (鯖に入っているファイルはそのまま)"
+            : "保持しない (リセットする)",
       },
       {
         name: "予定期限",
@@ -166,8 +169,13 @@ export async function completeReuse(
     (await serverBindingService.getName(serverId)) ??
     sourceWorkflow.pteroServerId;
 
-  // 返却フローと同様に、停止 -> バックアップ -> 初期化を順に進める。
+  // 返却フローと同様に、停止 -> バックアップ -> 必要なら初期化を順に進める。
   type ReuseStep = "stop" | "archive" | "reset" | "activate";
+  const steps: ReuseStep[] = ["stop", "archive"];
+  if (draft.fileMode === "reset") {
+    steps.push("reset");
+  }
+  steps.push("activate");
   const progress = new ProgressTracker<ReuseStep>(
     interaction,
     "流用処理中",
@@ -177,7 +185,7 @@ export async function completeReuse(
       reset: "サーバーを初期化",
       activate: "新しい企画内容へ切り替え",
     },
-    ["stop", "archive", "reset", "activate"],
+    steps,
   );
 
   await progress.execute("stop", async () => {
@@ -206,9 +214,11 @@ export async function completeReuse(
     await archiveService.archiveBackup(serverId, archiveName, "★");
   });
 
-  await progress.execute("reset", async () => {
-    await pterodactylCleanService.reset(serverId);
-  });
+  if (draft.fileMode === "reset") {
+    await progress.execute("reset", async () => {
+      await pterodactylCleanService.reset(serverId);
+    });
+  }
 
   await progress.execute("activate", async () => {
     const now = new Date();
@@ -263,6 +273,13 @@ export async function completeReuse(
             value: activeTargetWorkflow.description || "なし",
           },
           {
+            name: "サーバーファイル",
+            value:
+              draft.fileMode === "keep"
+                ? "保持する (鯖に入っているファイルはそのまま)"
+                : "保持しない (リセットする)",
+          },
+          {
             name: "サーバーID",
             value: serverId,
             inline: true,
@@ -296,6 +313,7 @@ export async function completeReuse(
 
   await interaction.editReply(
     `流用完了！サーバー \`${serverName}\` を「${activeTargetWorkflow.name}」へ引き継ぎました。\n` +
+      `サーバーファイル: ${draft.fileMode === "keep" ? "保持" : "リセット"}\n` +
       `新しい期限: <t:${Math.floor(activeTargetWorkflow.endDate.getTime() / 1000)}:D>`,
   );
 }

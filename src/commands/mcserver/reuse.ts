@@ -46,7 +46,6 @@ export class McServerReuseCommand extends Command {
     const modal = WorkflowReuseModal.build(workflow.id, {
       name: workflow.name,
       mcVersion: workflow.mcVersion ?? undefined,
-      panelUsers: workflow.panelUsers.map((user) => user.discordId),
       description: workflow.description ?? undefined,
     });
     await interaction.showModal(modal);

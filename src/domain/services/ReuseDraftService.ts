@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 
+/** 流用時のサーバーファイル保持モード */
+export type ReuseFileMode = "reset" | "keep";
+
 /**
  * 流用確認前の一時入力内容
  *
@@ -16,6 +19,8 @@ export interface ReuseDraft {
   organizerDiscordId: string;
   /** 新企画として入力された内容 */
   fields: BaseWorkflowParams;
+  /** サーバーファイルの保持設定 */
+  fileMode: ReuseFileMode;
   /** 初回実行時に作成された新ワークフローID（再試行用） */
   createdWorkflowId?: number;
   /** 有効期限 */
