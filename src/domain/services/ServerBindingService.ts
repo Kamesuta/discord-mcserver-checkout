@@ -1,3 +1,4 @@
+import { ServerType } from "@/generated/prisma/client";
 import { prisma } from "@/utils/prisma";
 
 /**
@@ -30,12 +31,14 @@ class ServerBindingService {
    * エイリアスとPterodactyl IDの対応付けを設定
    * @param name エイリアス (例: server01)
    * @param pteroId Pterodactyl ID (例: 354dc039)
+   * @param type サーバー種別 (省略時は新規作成のみ SERVER、既存は現状維持)
    */
-  async set(name: string, pteroId: string) {
+  async set(name: string, pteroId: string, type?: ServerType) {
     return await prisma.serverBinding.upsert({
       where: { name },
-      update: { pteroId },
-      create: { name, pteroId },
+      // 種別未指定の再バインドで既存の設定を上書きしない
+      update: { pteroId, ...(type ? { type } : {}) },
+      create: { name, pteroId, type: type ?? ServerType.SERVER },
     });
   }
 

@@ -8,15 +8,15 @@ import {
   TextInputStyle,
   UserSelectMenuBuilder,
 } from "discord.js";
-import semver from "semver";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
+import { parseMcVersionInput } from "@/domain/utils/serverType";
 import env from "@/utils/env.js";
 
 /** モーダルフィールドのデフォルト値 */
 export interface CheckoutModalDefaults {
   /** サーバーの用途/企画名 */
   name?: string;
-  /** Minecraft バージョン */
+  /** Minecraft バージョン (Mod鯖の場合は "1.20.1 Mod" のように種別を含む) */
   mcVersion?: string;
   /** パネル権限付与対象ユーザーの Discord ユーザーID一覧 */
   panelUsers?: string[];
@@ -66,7 +66,7 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     const mcVersionInput = new TextInputBuilder()
       .setCustomId("mc-version")
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder("例: 1.20.1")
+      .setPlaceholder("例: 1.20.1 / Mod鯖の場合: 1.20.1 Mod")
       .setRequired(false);
     if (defaults?.mcVersion) {
       mcVersionInput.setValue(defaults.mcVersion);
@@ -75,7 +75,9 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     modal.addLabelComponents(
       new LabelBuilder()
         .setLabel("Minecraft バージョン")
-        .setDescription("空の場合、最新版が設定されます")
+        .setDescription(
+          "空の場合、最新版が設定されます。Mod鯖を希望する場合は「Mod」と記載してください",
+        )
         .setTextInputComponent(mcVersionInput),
     );
 
@@ -222,7 +224,9 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
   ): Promise<BaseWorkflowParams | null> {
     const nameInput = interaction.fields.getTextInputValue("name");
     const description = interaction.fields.getTextInputValue("description");
-    const mcVersion = interaction.fields.getTextInputValue("mc-version");
+    // バージョン欄に「Mod」が含まれていたらMod鯖申請として扱い、種別とバージョンを分離する
+    const mcVersionInput = interaction.fields.getTextInputValue("mc-version");
+    const { serverType, mcVersion } = parseMcVersionInput(mcVersionInput);
 
     // 日付と企画名をパース
     const { eventDate, eventEndDate, name } =
@@ -234,9 +238,10 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
         ? (panelUsersField.values as string[])
         : [];
 
-    if (mcVersion && !semver.coerce(mcVersion)) {
+    // 「Mod」以外の文字が入っているのにバージョンを取り出せない場合はエラー
+    if (mcVersionInput.replace(/mod/gi, "").trim() && !mcVersion) {
       await interaction.editReply(
-        "Minecraft バージョンの形式が正しくありません (例: 1.21 または 1.20.1)。空の場合は最新版が適用されます。",
+        "Minecraft バージョンの形式が正しくありません (例: 1.21 または 1.20.1 Mod)。空の場合は最新版が適用されます。",
       );
       return null;
     }
@@ -276,7 +281,8 @@ export abstract class WorkflowBaseCheckoutModal extends InteractionHandler {
     return {
       name,
       description: description || undefined,
-      mcVersion: mcVersion || undefined,
+      mcVersion,
+      serverType,
       periodDays,
       panelUsers,
       eventDate,

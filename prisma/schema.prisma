@@ -21,6 +21,14 @@ enum WorkflowStatus {
   RETURNED
 }
 
+/// サーバー種別
+enum ServerType {
+  /// 通常鯖 (Paper)
+  SERVER
+  /// Mod鯖
+  MOD
+}
+
 /// 申請情報を管理するテーブル
 /// id は バックアップ保存先パスの識別子としても使用される
 model Workflow {
@@ -38,6 +46,8 @@ model Workflow {
   organizerDiscordId String
   /// 希望 Minecraft バージョン
   mcVersion          String?
+  /// 希望サーバー種別
+  serverType         ServerType     @default(SERVER)
   /// 貸出希望期間（日数）
   periodDays         Int
   /// Pterodactyl サーバーID（割り当て後に埋まる）
@@ -86,6 +96,8 @@ model ServerBinding {
   name      String   @id
   /// Pterodactyl サーバーID (例: 354dc039)
   pteroId   String
+  /// サーバー種別
+  type      ServerType @default(SERVER)
   /// 作成日時
   createdAt DateTime @default(now())
   /// 更新日時

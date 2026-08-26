@@ -1,6 +1,7 @@
 import {
   type PterodactylUser,
   type ServerBinding,
+  type ServerType,
   type Workflow,
   WorkflowStatus,
 } from "@/generated/prisma/client";
@@ -26,6 +27,8 @@ export interface BaseWorkflowParams {
   description?: string;
   /** 希望 Minecraft バージョン */
   mcVersion?: string;
+  /** 希望サーバー種別 */
+  serverType: ServerType;
   /** 貸出希望期間（日数） */
   periodDays: number;
   /** パネル権限付与対象ユーザーの Discord ユーザーIDのリスト */
@@ -102,6 +105,7 @@ export class WorkflowService {
           applicantDiscordId: params.applicantDiscordId,
           organizerDiscordId: params.organizerDiscordId,
           mcVersion: params.mcVersion,
+          serverType: params.serverType,
           periodDays: params.periodDays,
           eventDate: params.eventDate,
           status: WorkflowStatus.PENDING,
@@ -281,6 +285,7 @@ export class WorkflowService {
           name: params.name,
           description: params.description ?? null,
           mcVersion: params.mcVersion ?? null,
+          serverType: params.serverType,
           periodDays: params.periodDays,
           eventDate: params.eventDate ?? null,
           panelUsers: {
@@ -301,9 +306,12 @@ export class WorkflowService {
 
   /**
    * 利用可能なサーバー（未割り当てのサーバーバインディング）を検索する
+   * @param serverType 検索対象のサーバー種別
    * @returns 利用可能なサーバーバインディング、なければnull
    */
-  public async findAvailableServer(): Promise<ServerBinding | null> {
+  public async findAvailableServer(
+    serverType: ServerType,
+  ): Promise<ServerBinding | null> {
     const activeWorkflows = await prisma.workflow.findMany({
       where: { status: WorkflowStatus.ACTIVE },
       select: { pteroServerId: true },
@@ -313,7 +321,7 @@ export class WorkflowService {
       .filter((id): id is string => id !== null);
 
     return await prisma.serverBinding.findFirst({
-      where: { pteroId: { notIn: activeServerIds } },
+      where: { pteroId: { notIn: activeServerIds }, type: serverType },
     });
   }
 

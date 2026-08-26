@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { formatMcVersionInput } from "@/domain/utils/serverType";
 import { workflowAutocomplete } from "@/domain/utils/workflowAutocomplete";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowEditModal } from "@/interaction-handlers/mcserver-op/WorkflowEditModal";
@@ -49,7 +50,7 @@ export class WorkflowEditCommand extends Command {
 
     const modal = WorkflowEditModal.build(workflow.id, {
       name: workflow.name,
-      mcVersion: workflow.mcVersion ?? undefined,
+      mcVersion: formatMcVersionInput(workflow.mcVersion, workflow.serverType),
       panelUsers: workflow.panelUsers.map((u) => u.discordId),
       description: workflow.description ?? undefined,
     });

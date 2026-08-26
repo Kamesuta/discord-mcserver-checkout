@@ -18,6 +18,7 @@ import {
 import { GanttChart } from "@/discord-utils/GanttChart";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { CheckoutRequestButton } from "@/interaction-handlers/mcserver/CheckoutRequestButton";
 import { ReturnRequestButton } from "@/interaction-handlers/mcserver/ReturnRequestButton";
@@ -172,7 +173,7 @@ class NotificationBoardService {
 
         section += `- ID:${wf.id} — ${wf.name}\n`;
         section += `  主催: <@${wf.organizerDiscordId}>${applicantText}${panelUserText}\n`;
-        section += `  期間: ${wf.periodDays}日, バージョン: ${wf.mcVersion ?? "未指定"}\n`;
+        section += `  期間: ${wf.periodDays}日, バージョン: ${wf.mcVersion ?? "未指定"} (${serverTypeLabels[wf.serverType]})\n`;
       });
 
       if (workflows.length > 10) {

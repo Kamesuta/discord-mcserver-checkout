@@ -1,5 +1,6 @@
 import type { AutocompleteInteraction } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import { logger } from "@/utils/log";
 
 /**
@@ -25,7 +26,7 @@ export async function serverBindingAutocomplete(
 
     await interaction.respond(
       filtered.map((server) => ({
-        name: server.name,
+        name: `${server.name} (${serverTypeLabels[server.type]})`,
         value: server.name,
       })),
     );

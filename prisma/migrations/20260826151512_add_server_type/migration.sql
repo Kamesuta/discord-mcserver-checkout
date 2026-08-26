@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `ServerBinding` ADD COLUMN `type` ENUM('SERVER', 'MOD') NOT NULL DEFAULT 'SERVER';
+
+-- AlterTable
+ALTER TABLE `Workflow` ADD COLUMN `serverType` ENUM('SERVER', 'MOD') NOT NULL DEFAULT 'SERVER';

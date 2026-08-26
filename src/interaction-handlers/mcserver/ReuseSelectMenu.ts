@@ -6,6 +6,7 @@ import {
 import { MessageFlags, type StringSelectMenuInteraction } from "discord.js";
 import { commandMentions } from "@/discord-utils/commands.js";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { formatMcVersionInput } from "@/domain/utils/serverType";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowReuseModal } from "@/interaction-handlers/mcserver/WorkflowReuseModal";
 import { logger } from "@/utils/log";
@@ -68,7 +69,10 @@ export class ReuseSelectMenu extends InteractionHandler {
 
       const modal = WorkflowReuseModal.build(workflow.id, {
         name: workflow.name,
-        mcVersion: workflow.mcVersion ?? undefined,
+        mcVersion: formatMcVersionInput(
+          workflow.mcVersion,
+          workflow.serverType,
+        ),
         description: workflow.description ?? undefined,
       });
 

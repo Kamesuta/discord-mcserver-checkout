@@ -12,7 +12,6 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
-import semver from "semver";
 import { commandMentions } from "@/discord-utils/commands.js";
 import { customIdParams } from "@/discord-utils/customIds";
 import { createReuseConfirmation } from "@/domain/flows/ReuseFlow";
@@ -22,6 +21,7 @@ import {
 } from "@/domain/services/ReuseDraftService";
 import type { BaseWorkflowParams } from "@/domain/services/WorkflowService";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { parseMcVersionInput } from "@/domain/utils/serverType";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import env from "@/utils/env";
 import { logger } from "@/utils/log";
@@ -68,7 +68,7 @@ export class WorkflowReuseModal extends InteractionHandler {
     const mcVersionInput = new TextInputBuilder()
       .setCustomId("mc-version")
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder("例: 1.20.1")
+      .setPlaceholder("例: 1.20.1 / Mod鯖の場合: 1.20.1 Mod")
       .setRequired(false);
     if (defaults?.mcVersion) {
       mcVersionInput.setValue(defaults.mcVersion);
@@ -77,7 +77,9 @@ export class WorkflowReuseModal extends InteractionHandler {
     modal.addLabelComponents(
       new LabelBuilder()
         .setLabel("Minecraft バージョン")
-        .setDescription("空の場合、元の企画のバージョンを引き継ぎます")
+        .setDescription(
+          "空の場合、元の企画のバージョンを引き継ぎます。Mod鯖を希望する場合は「Mod」と記載してください",
+        )
         .setTextInputComponent(mcVersionInput),
     );
 
@@ -228,7 +230,9 @@ export class WorkflowReuseModal extends InteractionHandler {
 
     const nameInput = interaction.fields.getTextInputValue("name");
     const description = interaction.fields.getTextInputValue("description");
-    const mcVersion = interaction.fields.getTextInputValue("mc-version");
+    const mcVersionInput = interaction.fields.getTextInputValue("mc-version");
+    // バージョン欄に「Mod」が含まれていたらMod鯖申請として扱い、種別とバージョンを分離する
+    const { serverType, mcVersion } = parseMcVersionInput(mcVersionInput);
 
     const fileModeField = interaction.fields.fields.get("file-mode");
     const fileMode =
@@ -236,9 +240,10 @@ export class WorkflowReuseModal extends InteractionHandler {
         ? ((fileModeField.values[0] as ReuseFileMode | undefined) ?? "reset")
         : "reset";
 
-    if (mcVersion && !semver.coerce(mcVersion)) {
+    // 「Mod」以外の文字が入っているのにバージョンを取り出せない場合はエラー
+    if (mcVersionInput.replace(/mod/gi, "").trim() && !mcVersion) {
       await interaction.editReply(
-        "Minecraft バージョンの形式が正しくありません (例: 1.21 または 1.20.1)。空の場合は最新版が適用されます。",
+        "Minecraft バージョンの形式が正しくありません (例: 1.21 または 1.20.1 Mod)。空の場合は元の企画のバージョンが引き継がれます。",
       );
       return undefined;
     }
@@ -271,8 +276,9 @@ export class WorkflowReuseModal extends InteractionHandler {
       workflowFields: {
         name,
         description: description || undefined,
-        // 空欄時は最新版ではなく、元企画のバージョンをそのまま引き継ぐ
-        mcVersion: mcVersion || sourceWorkflow.mcVersion || undefined,
+        // 空欄時は最新版ではなく、元企画のバージョン・種別をそのまま引き継ぐ
+        mcVersion: mcVersion ?? sourceWorkflow.mcVersion ?? undefined,
+        serverType: mcVersionInput ? serverType : sourceWorkflow.serverType,
         periodDays,
         panelUsers: sourceWorkflow.panelUsers.map((user) => user.discordId),
         eventDate,

@@ -4,6 +4,7 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import type { ServerBinding } from "@/generated/prisma/browser";
 import { logger } from "@/utils/log";
 
@@ -27,7 +28,10 @@ export class ServerBindingListCommand extends Command {
       }
 
       const list = bindings
-        .map((b: ServerBinding) => `• \`${b.name}\` → \`${b.pteroId}\``)
+        .map(
+          (b: ServerBinding) =>
+            `• \`${b.name}\` → \`${b.pteroId}\` (${serverTypeLabels[b.type]})`,
+        )
         .join("\n");
 
       await interaction.editReply(

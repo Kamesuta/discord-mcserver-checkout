@@ -4,6 +4,8 @@ import {
 } from "@kaname-png/plugin-subcommands-advanced";
 import { MessageFlags } from "discord.js";
 import { serverBindingService } from "@/domain/services/ServerBindingService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
+import { ServerType } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
 @RegisterSubCommandGroup("mcserver-admin", "server-binding", (builder) =>
@@ -21,6 +23,16 @@ import { logger } from "@/utils/log";
         .setName("ptero-id")
         .setDescription("Pterodactyl サーバーID (例: 354dc039)")
         .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("type")
+        .setDescription("サーバー種別 (省略時: 新規は通常鯖、既存は変更なし)")
+        .addChoices(
+          { name: serverTypeLabels.SERVER, value: ServerType.SERVER },
+          { name: serverTypeLabels.MOD, value: ServerType.MOD },
+        )
+        .setRequired(false),
     ),
 )
 export class ServerBindingSetCommand extends Command {
@@ -29,13 +41,15 @@ export class ServerBindingSetCommand extends Command {
   ) {
     const name = interaction.options.getString("name", true);
     const pteroId = interaction.options.getString("ptero-id", true);
+    const type =
+      (interaction.options.getString("type") as ServerType | null) ?? undefined;
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
-      await serverBindingService.set(name, pteroId);
+      const binding = await serverBindingService.set(name, pteroId, type);
       await interaction.editReply(
-        `サーバーバインディングを設定しました: \`${name}\` → \`${pteroId}\``,
+        `サーバーバインディングを設定しました: \`${name}\` → \`${pteroId}\` (${serverTypeLabels[binding.type]})`,
       );
     } catch (error) {
       logger.error(error);

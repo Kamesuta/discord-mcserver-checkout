@@ -113,7 +113,8 @@ export class WorkflowOpCreateModal extends WorkflowBaseCheckoutModal {
       if (result) {
         await interaction.editReply(
           `サーバーを貸し出しました！ (ID: ${workflow.id})` +
-            (skipReset ? "\n⚠️ サーバーはリセットされていません" : ""),
+            (skipReset ? "\n⚠️ サーバーはリセットされていません" : "") +
+            result.warning,
         );
       }
     } catch (error) {

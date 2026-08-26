@@ -1,6 +1,7 @@
 import { ActionRowBuilder, type ButtonBuilder, EmbedBuilder } from "discord.js";
 import { userService } from "@/domain/services/UserService";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
@@ -57,6 +58,7 @@ export async function createWorkflowApprovalReview(workflowId: number): Promise<
           )
           .join("\n"),
       },
+      { name: "種別", value: serverTypeLabels[workflow.serverType] },
       { name: "バージョン", value: workflow.mcVersion ?? "未指定" },
       { name: "期間", value: `${workflow.periodDays}日` },
     );

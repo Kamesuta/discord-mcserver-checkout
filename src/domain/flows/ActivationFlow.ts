@@ -17,6 +17,7 @@ import {
   type WorkflowWithUsers,
   workflowService,
 } from "@/domain/services/WorkflowService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import { workflowFields } from "@/domain/utils/workflowFields";
 import { type ServerBinding, WorkflowStatus } from "@/generated/prisma/client";
 import { WorkflowApproveButton } from "@/interaction-handlers/mcserver-op/WorkflowApproveButton";
@@ -67,7 +68,7 @@ export async function updateServerSettings(
  * @param skipReset サーバーをリセットしない場合は true
  * @param notificationMessage 通知メッセージのタイトル（デフォルト: "サーバー貸出が承認されました！"）
  * @param serverName 指定するサーバー名（省略時は自動割り当て）
- * @returns 割り当てられたサーバー名と終了日、またはエラー時は null
+ * @returns 割り当てられたサーバー名・終了日・警告文、またはエラー時は null
  */
 export async function activateWorkflow(
   interaction: ActivationInteraction,
@@ -75,7 +76,15 @@ export async function activateWorkflow(
   skipReset: boolean = false,
   notificationMessage: string = "サーバー貸出が承認されました！",
   serverName?: string,
-): Promise<{ serverName: string; endDate: Date } | null> {
+): Promise<{
+  serverName: string;
+  endDate: Date;
+  /** 種別不一致などの警告文（なければ空文字） */
+  warning: string;
+} | null> {
+  // 種別不一致などの警告（呼び出し元の返信に付加する）
+  let warning = "";
+
   // サーバーを取得（指定されている場合は指定サーバー、そうでない場合は自動割り当て）
   let availableServer: ServerBinding | null;
   if (serverName) {
@@ -96,12 +105,18 @@ export async function activateWorkflow(
       );
       return null;
     }
+    // 種別が食い違っていても管理者の明示指定を優先し、警告のみ行う
+    if (availableServer.type !== workflow.serverType) {
+      warning = `\n⚠️ 種別が異なります (申請: ${serverTypeLabels[workflow.serverType]} / サーバー: ${serverTypeLabels[availableServer.type]})`;
+    }
   } else {
     // 利用可能なサーバーを自動検索
-    availableServer = await workflowService.findAvailableServer();
+    availableServer = await workflowService.findAvailableServer(
+      workflow.serverType,
+    );
     if (!availableServer) {
       await interaction.editReply(
-        "利用可能なサーバーがありません。サーバーバインディングを確認してください。",
+        `利用可能な${serverTypeLabels[workflow.serverType]}がありません。サーバーバインディングを確認してください。`,
       );
       return null;
     }
@@ -201,7 +216,7 @@ export async function activateWorkflow(
   // 全部確認ボードを更新
   await notificationBoardService.updateBoard(interaction.client);
 
-  return { serverName: availableServer.name, endDate };
+  return { serverName: availableServer.name, endDate, warning };
 }
 
 /**
@@ -234,7 +249,7 @@ export async function completeApproval(
 
     if (result) {
       await interaction.editReply(
-        `承認完了！サーバー \`${result.serverName}\` を割り当てました。\n期限: <t:${Math.floor(result.endDate.getTime() / 1000)}:D>`,
+        `承認完了！サーバー \`${result.serverName}\` を割り当てました。\n期限: <t:${Math.floor(result.endDate.getTime() / 1000)}:D>${result.warning}`,
       );
     }
   } catch (error) {

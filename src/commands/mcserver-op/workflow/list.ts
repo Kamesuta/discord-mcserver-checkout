@@ -5,6 +5,7 @@ import {
 import { PaginatedMessageEmbedFields } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
 import { workflowService } from "@/domain/services/WorkflowService";
+import { serverTypeLabels } from "@/domain/utils/serverType";
 import type { WorkflowStatus } from "@/generated/prisma/client";
 import { logger } from "@/utils/log";
 
@@ -79,7 +80,7 @@ export class WorkflowListCommand extends Command {
               value: [
                 `主催者: <@${wf.organizerDiscordId}>${applicantText}`,
                 ...panelUserText,
-                `期間: ${wf.periodDays}日, バージョン: ${wf.mcVersion ?? "未指定"}`,
+                `期間: ${wf.periodDays}日, バージョン: ${wf.mcVersion ?? "未指定"} (${serverTypeLabels[wf.serverType]})`,
                 wf.description ? `補足: ${wf.description}` : "",
               ]
                 .filter(Boolean)
