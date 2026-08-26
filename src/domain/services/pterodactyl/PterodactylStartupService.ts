@@ -88,9 +88,13 @@ class PterodactylStartupService extends PterodactylBaseService {
   public getJavaImageForMinecraftVersion(mcVersion: string): string {
     const v = semver.coerce(mcVersion);
     if (!v) {
-      return "ghcr.io/pterodactyl/yolks:java_21";
+      // バージョン不明の場合は最新版が入るため、最新版の要求に合わせる
+      return "ghcr.io/pterodactyl/yolks:java_25";
     }
 
+    // 26.1 以降 (1.21.11 の次) の新バージョン体系は Java 25 を要求する
+    if (semver.satisfies(v, ">=26.0.0"))
+      return "ghcr.io/pterodactyl/yolks:java_25";
     if (semver.satisfies(v, ">=1.20.5"))
       return "ghcr.io/pterodactyl/yolks:java_21";
     if (semver.satisfies(v, ">=1.18.0"))
